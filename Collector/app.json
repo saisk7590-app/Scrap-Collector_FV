@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Scrap Collector",
+    "slug": "scrap-collector",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1F8A70"
+    },
+    "android": {
+      "package": "com.sai7590.scrapcollector",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#1F8A70"
+      }
+    },
+    "web": {
+      "favicon": "./assets/icon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "4d6632dc-8987-4659-8017-ddcb15274c06"
+      }
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
