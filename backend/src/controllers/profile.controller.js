@@ -1,9 +1,10 @@
 const pool = require('../config/db');
+const ApiResponse = require('../utils/apiResponse');
 
 /* =======================
    GET PROFILE
 ======================= */
-exports.getProfile = async (req, res) => {
+exports.getProfile = async (req, res, next) => {
     try {
         const userId = req.user.id;
 
@@ -18,7 +19,7 @@ exports.getProfile = async (req, res) => {
 
         const profile = result.rows[0];
 
-        return res.status(200).json({
+        return ApiResponse.success(res, "Profile retrieved", {
             profile: {
                 id: profile.id,
                 userId: profile.user_id,
@@ -39,7 +40,7 @@ exports.getProfile = async (req, res) => {
 /* =======================
    UPDATE PROFILE
 ======================= */
-exports.updateProfile = async (req, res) => {
+exports.updateProfile = async (req, res, next) => {
     try {
         const userId = req.user.id;
         const { fullName, phone } = req.body;
@@ -71,13 +72,12 @@ exports.updateProfile = async (req, res) => {
         const result = await pool.query(query, values);
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: "Profile not found" });
+            return ApiResponse.error(res, "Profile not found", 404);
         }
 
         const profile = result.rows[0];
 
-        return res.status(200).json({
-            message: "Profile updated",
+        return ApiResponse.success(res, "Profile updated", {
             profile: {
                 id: profile.id,
                 userId: profile.user_id,
@@ -89,7 +89,6 @@ exports.updateProfile = async (req, res) => {
         });
 
     } catch (err) {
-        console.error("Update profile error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        next(err);
     }
 };

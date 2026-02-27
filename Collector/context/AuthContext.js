@@ -14,10 +14,14 @@ export const AuthProvider = ({ children }) => {
     const checkToken = async () => {
         try {
             const token = await AsyncStorage.getItem("authToken");
-            if (token) {
-                setIsAuthenticated(true);
-            } else {
+
+            // No token, or token is literally "undefined" / "null" (corrupted)
+            if (!token || token === "undefined" || token === "null") {
+                await AsyncStorage.removeItem("authToken");
+                await AsyncStorage.removeItem("userData");
                 setIsAuthenticated(false);
+            } else {
+                setIsAuthenticated(true);
             }
         } catch (e) {
             console.error("Error reading token:", e);

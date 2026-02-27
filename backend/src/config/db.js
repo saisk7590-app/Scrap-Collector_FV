@@ -1,16 +1,23 @@
 const { Pool } = require("pg");
-require("dotenv").config();
+const env = require("./env");
 
-const pool = new Pool({
-  user: process.env.DB_USER || "postgres",
-  host: process.env.DB_HOST || "localhost",
-  database: process.env.DB_NAME || "scrap_collector",
-  password: process.env.DB_PASSWORD || "admin123",
-  port: parseInt(process.env.DB_PORT) || 5432,
-});
+const poolConfig = env.DATABASE_URL
+  ? { connectionString: env.DATABASE_URL }
+  : {
+    user: env.DB_USER,
+    host: env.DB_HOST,
+    database: env.DB_NAME,
+    password: env.DB_PASSWORD,
+    port: parseInt(env.DB_PORT),
+  };
+
+const pool = new Pool(poolConfig);
 
 pool.on("connect", () => {
-  console.log("✅ PostgreSQL connected: scrap_collector");
+  // Silent in production, or use a logger
+  if (env.NODE_ENV === 'development') {
+    console.log("✅ PostgreSQL connected");
+  }
 });
 
 pool.on("error", (err) => {

@@ -1,24 +1,23 @@
 const pool = require('../config/db');
+const ApiResponse = require('../utils/apiResponse');
 
 const ALLOWED_CITY = "Hyderabad";
 
 /* =======================
    CREATE PICKUP (Customer)
 ======================= */
-exports.createPickup = async (req, res) => {
+exports.createPickup = async (req, res, next) => {
     try {
         const { items, totalQty, totalWeight, alternateNumber, timeSlot, city } = req.body;
         const userId = req.user.id;
 
         // Location Validation
         if (!city || city.toLowerCase() !== ALLOWED_CITY.toLowerCase()) {
-            return res.status(400).json({
-                message: `Service currently available only in ${ALLOWED_CITY}`,
-            });
+            return ApiResponse.error(res, `Service currently available only in ${ALLOWED_CITY}`, 400);
         }
 
         if (!items || !timeSlot) {
-            return res.status(400).json({ message: "Items and time slot are required" });
+            return ApiResponse.error(res, "Items and time slot are required", 400);
         }
 
         const result = await pool.query(
@@ -32,21 +31,17 @@ exports.createPickup = async (req, res) => {
         // Format human-readable ID: PK + 6-digit padded number
         pickup.display_id = `PK${String(pickup.pickup_no).padStart(6, '0')}`;
 
-        return res.status(201).json({
-            message: "Pickup scheduled successfully",
-            pickup
-        });
+        return ApiResponse.success(res, "Pickup scheduled successfully", pickup, 201);
 
     } catch (err) {
-        console.error("Create pickup error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        next(err);
     }
 };
 
 /* =======================
    GET MY PICKUPS (Customer)
 ======================= */
-exports.getMyPickups = async (req, res) => {
+exports.getMyPickups = async (req, res, next) => {
     try {
         const userId = req.user.id;
 
@@ -60,28 +55,30 @@ exports.getMyPickups = async (req, res) => {
             display_id: `PK${String(p.pickup_no).padStart(6, '0')}`
         }));
 
-        return res.status(200).json({ pickups });
+        return ApiResponse.success(res, "Pickups retrieved", { pickups });
 
     } catch (err) {
-        console.error("Get my pickups error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        next(err);
     }
 };
 
 /* =======================
    GET TODAY PICKUPS (Collector)
 ======================= */
-exports.getTodayPickups = async (req, res) => {
+exports.getTodayPickups = async (req, res, next) => {
     try {
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();
         const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+        const collectorId = req.user.id; // From auth.middleware
 
+        // Only show pickups that are UNASSIGNED or ASSIGNED TO ME
         const result = await pool.query(
             `SELECT * FROM pickups 
-       WHERE created_at >= $1 AND created_at <= $2 
+       WHERE created_at >= $1 AND created_at <= $2
+       AND (collector_id IS NULL OR collector_id = $3)
        ORDER BY created_at ASC`,
-            [startOfDay, endOfDay]
+            [startOfDay, endOfDay, collectorId]
         );
 
         const pickups = result.rows.map(p => ({
@@ -89,18 +86,17 @@ exports.getTodayPickups = async (req, res) => {
             display_id: `PK${String(p.pickup_no).padStart(6, '0')}`
         }));
 
-        return res.status(200).json({ pickups });
+        return ApiResponse.success(res, "Today's pickups retrieved", { pickups });
 
     } catch (err) {
-        console.error("Get today pickups error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        next(err);
     }
 };
 
 /* =======================
    GET ALL PICKUPS (Collector/Admin)
 ======================= */
-exports.getAllPickups = async (req, res) => {
+exports.getAllPickups = async (req, res, next) => {
     try {
         const result = await pool.query(
             'SELECT * FROM pickups ORDER BY created_at DESC'
@@ -111,51 +107,62 @@ exports.getAllPickups = async (req, res) => {
             display_id: `PK${String(p.pickup_no).padStart(6, '0')}`
         }));
 
-        return res.status(200).json({ pickups });
+        return ApiResponse.success(res, "All pickups retrieved", { pickups });
 
     } catch (err) {
-        console.error("Get all pickups error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        next(err);
     }
 };
 
 /* =======================
    UPDATE PICKUP STATUS
 ======================= */
-exports.updatePickupStatus = async (req, res) => {
+exports.updatePickupStatus = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { status, amount } = req.body;
+        const collectorId = req.user.id; // The person making the request
 
         if (!status) {
-            return res.status(400).json({ message: "Status is required" });
+            return ApiResponse.error(res, "Status is required", 400);
         }
 
         const validStatuses = ['scheduled', 'in_progress', 'completed', 'cancelled'];
         if (!validStatuses.includes(status)) {
-            return res.status(400).json({ message: `Status must be one of: ${validStatuses.join(', ')}` });
+            return ApiResponse.error(res, `Status must be one of: ${validStatuses.join(', ')}`, 400);
         }
 
+        // 1. First, check who currently owns this pickup
+        const checkResult = await pool.query('SELECT collector_id FROM pickups WHERE id = $1', [id]);
+        if (checkResult.rows.length === 0) {
+            return ApiResponse.error(res, "Pickup not found", 404);
+        }
+
+        const currentOwner = checkResult.rows[0].collector_id;
+
+        // 2. Lock mechanism: prevent stealing
+        // If it belongs to someone else (not NULL and not ME), deny access
+        if (currentOwner !== null && currentOwner !== collectorId) {
+            return ApiResponse.error(res, "Another collector has already claimed this pickup", 403);
+        }
+
+        // 3. Update the record (and assign ownership if it was NULL)
         let query, params;
 
         if (amount !== undefined) {
-            query = 'UPDATE pickups SET status = $1, amount = $2, updated_at = NOW() WHERE id = $3 RETURNING *';
-            params = [status, amount, id];
+            query = 'UPDATE pickups SET status = $1, amount = $2, collector_id = $3, updated_at = NOW() WHERE id = $4 RETURNING *';
+            params = [status, amount, collectorId, id];
         } else {
-            query = 'UPDATE pickups SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *';
-            params = [status, id];
+            query = 'UPDATE pickups SET status = $1, collector_id = $2, updated_at = NOW() WHERE id = $3 RETURNING *';
+            params = [status, collectorId, id];
         }
 
         const result = await pool.query(query, params);
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ message: "Pickup not found" });
-        }
-
         const pickup = result.rows[0];
         pickup.display_id = `PK${String(pickup.pickup_no).padStart(6, '0')}`;
 
-        // ✅ If status is completed, update user's wallet balance in profiles table
+        // 4. If status is completed, update user's wallet balance in profiles table
         if (status === 'completed' && amount > 0) {
             try {
                 await pool.query(
@@ -164,18 +171,12 @@ exports.updatePickupStatus = async (req, res) => {
                 );
             } catch (profileErr) {
                 console.error("Error updating profile balance:", profileErr);
-                // Note: We don't fail the whole request if profile update fails, 
-                // but we log it. In production, this should be a transaction.
             }
         }
 
-        return res.status(200).json({
-            message: "Pickup status updated",
-            pickup
-        });
+        return ApiResponse.success(res, "Pickup status updated", { pickup });
 
     } catch (err) {
-        console.error("Update pickup status error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        next(err);
     }
 };

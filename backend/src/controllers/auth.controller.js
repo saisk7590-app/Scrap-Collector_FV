@@ -1,19 +1,21 @@
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const env = require('../config/env');
+const ApiResponse = require('../utils/apiResponse');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'scrap_collector_super_secret_key';
+const JWT_SECRET = env.JWT_SECRET;
 const JWT_EXPIRES_IN = '7d';
 
 /* =======================
    REGISTER
 ======================= */
-exports.register = async (req, res) => {
+exports.register = async (req, res, next) => {
     try {
         const { email, password, fullName, phone, role } = req.body;
 
         if (!email || !password || !fullName || !phone) {
-            return res.status(400).json({ message: "All fields are required" });
+            return ApiResponse.error(res, "All fields are required", 400);
         }
 
         // Check if user already exists
@@ -23,7 +25,7 @@ exports.register = async (req, res) => {
         );
 
         if (existingUser.rows.length > 0) {
-            return res.status(409).json({ message: "User already exists with this email" });
+            return ApiResponse.error(res, "User already exists with this email", 409);
         }
 
         // Hash password
@@ -54,8 +56,7 @@ exports.register = async (req, res) => {
             { expiresIn: JWT_EXPIRES_IN }
         );
 
-        return res.status(201).json({
-            message: "Registration successful",
+        return ApiResponse.success(res, "Registration successful", {
             token,
             user: {
                 id: user.id,
@@ -65,23 +66,22 @@ exports.register = async (req, res) => {
                 role: profile.role,
                 walletBalance: profile.wallet_balance,
             }
-        });
+        }, 201);
 
     } catch (err) {
-        console.error("Register error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        next(err);
     }
 };
 
 /* =======================
    LOGIN
 ======================= */
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
         if (!email || !password) {
-            return res.status(400).json({ message: "Email and password are required" });
+            return ApiResponse.error(res, "Email and password are required", 400);
         }
 
         // Find user
@@ -91,7 +91,7 @@ exports.login = async (req, res) => {
         );
 
         if (userResult.rows.length === 0) {
-            return res.status(401).json({ message: "Invalid email or password" });
+            return ApiResponse.error(res, "Invalid email or password", 401);
         }
 
         const user = userResult.rows[0];
@@ -99,7 +99,7 @@ exports.login = async (req, res) => {
         // Compare password
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
-            return res.status(401).json({ message: "Invalid email or password" });
+            return ApiResponse.error(res, "Invalid email or password", 401);
         }
 
         // Get profile
@@ -111,7 +111,7 @@ exports.login = async (req, res) => {
         const profile = profileResult.rows[0];
 
         if (!profile) {
-            return res.status(404).json({ message: "User profile not found" });
+            return ApiResponse.error(res, "User profile not found", 404);
         }
 
         // Generate JWT
@@ -121,8 +121,7 @@ exports.login = async (req, res) => {
             { expiresIn: JWT_EXPIRES_IN }
         );
 
-        return res.status(200).json({
-            message: "Login successful",
+        return ApiResponse.success(res, "Login successful", {
             token,
             user: {
                 id: user.id,
@@ -135,20 +134,19 @@ exports.login = async (req, res) => {
         });
 
     } catch (err) {
-        console.error("Login error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        next(err);
     }
 };
 
 /* =======================
    FORGOT PASSWORD
 ======================= */
-exports.forgotPassword = async (req, res) => {
+exports.forgotPassword = async (req, res, next) => {
     try {
         const { email } = req.body;
 
         if (!email) {
-            return res.status(400).json({ message: "Email is required" });
+            return ApiResponse.error(res, "Email is required", 400);
         }
 
         const userResult = await pool.query(
@@ -158,7 +156,7 @@ exports.forgotPassword = async (req, res) => {
 
         if (userResult.rows.length === 0) {
             // Don't reveal that user doesn't exist
-            return res.status(200).json({ message: "If the email exists, a reset link has been sent" });
+            return ApiResponse.success(res, "If the email exists, a reset link has been sent");
         }
 
         // Generate reset token
@@ -173,12 +171,9 @@ exports.forgotPassword = async (req, res) => {
 
         // TODO: Send email with reset link using nodemailer
         // For now, just return success
-        return res.status(200).json({
-            message: "If the email exists, a reset link has been sent"
-        });
+        return ApiResponse.success(res, "If the email exists, a reset link has been sent");
 
     } catch (err) {
-        console.error("Forgot password error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        next(err);
     }
 };

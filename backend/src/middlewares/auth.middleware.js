@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'scrap_collector_super_secret_key';
+const env = require('../config/env');
 
 /**
  * Authentication Middleware
@@ -11,13 +10,15 @@ const authMiddleware = async (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'Authentication required' });
+        const err = new Error('Authentication required');
+        err.statusCode = 401;
+        return next(err);
     }
 
     const token = authHeader.split(' ')[1];
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, env.JWT_SECRET);
 
         // Attach user info to request
         req.user = {
@@ -28,10 +29,8 @@ const authMiddleware = async (req, res, next) => {
 
         next();
     } catch (err) {
-        if (err.name === 'TokenExpiredError') {
-            return res.status(401).json({ message: 'Token expired, please login again' });
-        }
-        return res.status(401).json({ message: 'Invalid token' });
+        // Pass to central error handler
+        next(err);
     }
 };
 

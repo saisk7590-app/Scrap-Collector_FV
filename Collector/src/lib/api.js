@@ -1,26 +1,38 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-// ============================================
-// 🔧 CHANGE THIS WHEN DEPLOYING TO PRODUCTION
-// ============================================
-// For local dev with Expo:
-//   - Android Emulator: http://10.0.2.2:5000/api
-//   - iOS Simulator:    http://localhost:5000/api
-//   - Physical device:  http://<YOUR_PC_IP>:5000/api
-//   - Production:       https://your-domain.com/api
 import { Platform } from "react-native";
 
 // ============================================
-// 🔧 CHANGE THIS WHEN DEPLOYING TO PRODUCTION
+// 🔧 API CONFIGURATION
 // ============================================
-// For local dev with Expo:
-//   - Web Browser:      http://localhost:5000/api
-//   - Android Emulator: http://10.0.2.2:5000/api
-//   - iOS/Physical:     http://<YOUR_PC_IP>:5000/api
+// Switch ENV to control which backend the app talks to.
 //
-// 💡 TIP: Use your computer's IP address (e.g., 192.168.x.x) for physical devices.
-const LOCAL_IP = "192.168.1.100"; // 👈 Update this to your ACTUAL PC IP
-const API_URL = Platform.OS === "web" ? "http://localhost:5000/api" : `http://${LOCAL_IP}:5000/api`;
+// "ngrok"       → Phone & PC on DIFFERENT networks (ngrok tunnel)
+// "local"       → Phone & PC on SAME WiFi network
+// "production"  → Deployed cloud backend
+// ============================================
+const ENV = "ngrok"; // 👈 CHANGE THIS AS NEEDED
+
+const ENVIRONMENTS = {
+    ngrok: {
+        // Paste your ngrok HTTPS URL here (changes every restart on free plan)
+        API_URL: "https://glottologic-petrifiedly-luanna.ngrok-free.dev/api",
+    },
+    local: {
+        // Same WiFi: use your PC's local IP address
+        API_URL:
+            Platform.OS === "web"
+                ? "http://localhost:5000/api"
+                : Platform.OS === "android"
+                    ? "http://10.0.2.2:5000/api"   // Android emulator
+                    : "http://192.168.1.100:5000/api", // Physical device — update IP
+    },
+    production: {
+        // Your deployed backend URL
+        API_URL: "https://api.yourscrapcollector.com/api",
+    },
+};
+
+const API_URL = ENVIRONMENTS[ENV].API_URL;
 
 /**
  * Make an authenticated API request to the backend.
@@ -62,7 +74,9 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
             };
         }
 
-        return data;
+        // Backend wraps responses as { success, message, data: {...} }
+        // Unwrap so callers can do: response.token, response.user, etc.
+        return data.data ? { ...data, ...data.data } : data;
     } catch (err) {
         if (err.status) {
             throw err; // Re-throw API errors

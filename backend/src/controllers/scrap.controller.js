@@ -1,15 +1,16 @@
 const pool = require('../config/db');
+const ApiResponse = require('../utils/apiResponse');
 
 /* =======================
    CREATE SCRAP REQUEST
 ======================= */
-exports.createScrapRequest = async (req, res) => {
+exports.createScrapRequest = async (req, res, next) => {
     try {
         const userId = req.user.id;
         const { items, totalWeight } = req.body;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
-            return res.status(400).json({ message: "At least one item is required" });
+            return ApiResponse.error(res, "At least one item is required", 400);
         }
 
         const result = await pool.query(
@@ -19,21 +20,17 @@ exports.createScrapRequest = async (req, res) => {
             [userId, JSON.stringify(items), totalWeight || 0]
         );
 
-        return res.status(201).json({
-            message: "Scrap request created",
-            scrapRequest: result.rows[0]
-        });
+        return ApiResponse.success(res, "Scrap request created", { scrapRequest: result.rows[0] }, 201);
 
     } catch (err) {
-        console.error("Create scrap request error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        next(err);
     }
 };
 
 /* =======================
    GET MY SCRAP REQUESTS
 ======================= */
-exports.getMyScrapRequests = async (req, res) => {
+exports.getMyScrapRequests = async (req, res, next) => {
     try {
         const userId = req.user.id;
 
@@ -42,10 +39,9 @@ exports.getMyScrapRequests = async (req, res) => {
             [userId]
         );
 
-        return res.status(200).json({ scrapRequests: result.rows });
+        return ApiResponse.success(res, "Scrap requests retrieved", { scrapRequests: result.rows });
 
     } catch (err) {
-        console.error("Get my scrap requests error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        next(err);
     }
 };
