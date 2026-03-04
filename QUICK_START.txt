@@ -1,0 +1,52 @@
+PLEASE READ THIS TO START THE APP (DAILY CHECKLIST)
+================================================
+
+Follow these EXACT steps in order to show your teammates.
+
+STEP 1: START THE BACKEND
+-------------------------
+1. Open a terminal.
+2. Type: cd backend
+3. Type: npm run dev
+(Keep this terminal open. It should say "PostgreSQL connected")
+
+STEP 2: START NGROK (The Tunnel)
+--------------------------------
+1. Open a SECOND terminal.
+2. Type: npx ngrok http 5000
+3. Find the URL that looks like: https://xxxx-xxxx.ngrok-free.app
+4. COPY that URL.
+
+STEP 3: UPDATE THE CODE
+-----------------------
+1. Open "Customer/src/lib/api.js" and paste your NEW URL into the "ngrok" section.
+2. Open "Collector/src/lib/api.js" and paste the SAME URL there.
+3. SAVE BOTH FILES.
+
+STEP 4: START THE CUSTOMER APP
+------------------------------
+1. Open a THIRD terminal.
+2. Type: cd Customer
+3. Type: npx expo start --tunnel
+4. Scan the QR code with your phone.
+
+STEP 5: START THE COLLECTOR APP
+-------------------------------
+1. Open a FOURTH terminal.
+2. Type: cd Collector
+3. Type: npx expo start --tunnel
+4. IMPORTANT: If it asks "Port 8081 is being used, use 8082 instead?", Type "y" and press Enter.
+5. Scan the QR code with your phone.
+
+------------------------------------------------
+COMMON ERRORS & FIXES:
+------------------------------------------------
+- ERROR: "ngrok tunnel took too long"
+FIX: Close the terminal and try the command again. It usually means your office internet is slow or ngrok is busy.
+
+- ERROR: "Authentication required" on phone
+FIX: Log out of the app on your phone and Log In again. This refreshes the security token.
+
+- ERROR: "Visit Site" warning page
+FIX: If your phone shows a blue ngrok warning page, you MUST click the "Visit Site" button, otherwise the app won't work.
+------------------------------------------------

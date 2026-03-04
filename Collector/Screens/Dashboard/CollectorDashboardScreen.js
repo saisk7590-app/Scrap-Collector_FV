@@ -109,7 +109,6 @@ export default function CollectorDashboardScreen({ navigation }) {
         style={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
@@ -134,16 +133,13 @@ export default function CollectorDashboardScreen({ navigation }) {
             </View>
           </View>
 
-          {/* BLUE STATS */}
           <View style={styles.headerStats}>
             <View style={styles.statCard}><Clock color="#E0F2FE" size={20} /><Text style={styles.statLabel}>Today's Pickups</Text><Text style={styles.statValue}>{stats.todayPickups}</Text></View>
             <View style={styles.statCard}><Wallet color="#E0F2FE" size={20} /><Text style={styles.statLabel}>Today's Earnings</Text><Text style={styles.statValue}>₹{stats.todayEarnings}</Text></View>
           </View>
         </View>
 
-        {/* CONTENT */}
         <View style={styles.content}>
-          {/* WHITE QUICK STATS */}
           <View style={styles.row}>
             <View style={styles.whiteCard}>
               <Clock color="#F97316" size={20} />
@@ -166,7 +162,6 @@ export default function CollectorDashboardScreen({ navigation }) {
             </View>
           </View>
 
-          {/* BUTTON */}
           <TouchableOpacity
             style={styles.secondaryButton}
             onPress={() =>
@@ -179,7 +174,6 @@ export default function CollectorDashboardScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
 
-          {/* TODAY SCHEDULE */}
           <Text style={styles.sectionTitle}>
             Today's Schedule
           </Text>

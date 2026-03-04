@@ -31,7 +31,6 @@ export default function CollectorProfileScreen() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity
                     style={styles.backButton}
@@ -40,7 +39,7 @@ export default function CollectorProfileScreen() {
                     <ArrowLeft color="#111827" size={24} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Profile & Settings</Text>
-                <View style={{ width: 40 }} /> {/* Spacer */}
+                <View style={{ width: 40 }} />
             </View>
 
             <View style={styles.container}>
@@ -50,7 +49,6 @@ export default function CollectorProfileScreen() {
                     </Text>
                 </View>
 
-                {/* Logout Button */}
                 <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                     <LogOut color="#FFFFFF" size={20} />
                     <Text style={styles.logoutText}>Logout</Text>
