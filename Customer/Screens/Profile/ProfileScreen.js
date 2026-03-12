@@ -61,7 +61,7 @@ export default function ProfileScreen({ navigation }) {
       </SafeAreaView>
 
       {/* CONTENT */}
-      <ScrollView contentContainerStyle={{ paddingBottom: SPACING.md }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: SPACING.md }}>
         {/* PROFILE CARD */}
         <View style={styles.card}>
           <View style={styles.userRow}>

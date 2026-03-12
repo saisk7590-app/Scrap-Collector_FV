@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "scrap-collector",
-    "slug": "snack-c7bbff87-f0a2-4aa9-ab9f-e59356fa6457",
+    "name": "Scrap Collector",
+    "slug": "scrap-collector",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,20 +10,29 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#1F8A70"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.sai7590.scrapcollector",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#1F8A70"
       },
       "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "4d6632dc-8987-4659-8017-ddcb15274c06"
+      }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

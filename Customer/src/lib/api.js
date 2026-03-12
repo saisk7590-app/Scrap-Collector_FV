@@ -9,8 +9,7 @@ import { Platform } from "react-native";
 // "ngrok"       → Phone & PC on DIFFERENT networks (ngrok tunnel)
 // "local"       → Phone & PC on SAME WiFi network
 // "production"  → Deployed cloud backend
-// ============================================
-const ENV = "ngrok"; // 👈 CHANGE THIS AS NEEDED
+const ENV = "local"; // 👈 CHANGE THIS AS NEEDED
 
 const ENVIRONMENTS = {
     ngrok: {

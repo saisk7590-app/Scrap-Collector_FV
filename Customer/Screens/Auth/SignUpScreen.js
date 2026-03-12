@@ -6,9 +6,10 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Recycle } from "lucide-react-native";
+import { Recycle, Truck, ShoppingBag } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 
 import CustomInput from "../../components/CustomInput";
@@ -24,6 +25,7 @@ export default function SignUpScreen() {
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState("customer"); // 'customer' or 'collector'
 
   const { signIn } = useAuth();
 
@@ -50,7 +52,7 @@ export default function SignUpScreen() {
         password,
         fullName,
         phone: mobile,
-        role: "customer",
+        role: selectedRole,
       });
 
       // Pass token + user data to context
@@ -78,6 +80,52 @@ export default function SignUpScreen() {
 
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join and start recycling today</Text>
+
+          {/* ===== ROLE TOGGLE ===== */}
+          <Text style={styles.roleLabel}>I am a:</Text>
+          <View style={styles.roleToggle}>
+            <TouchableOpacity
+              style={[
+                styles.roleOption,
+                selectedRole === "customer" && styles.roleOptionActive,
+              ]}
+              onPress={() => setSelectedRole("customer")}
+            >
+              <ShoppingBag
+                size={20}
+                color={selectedRole === "customer" ? "#FFFFFF" : "#6B7280"}
+              />
+              <Text
+                style={[
+                  styles.roleText,
+                  selectedRole === "customer" && styles.roleTextActive,
+                ]}
+              >
+                Customer
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.roleOption,
+                selectedRole === "collector" && styles.roleOptionActiveBlue,
+              ]}
+              onPress={() => setSelectedRole("collector")}
+            >
+              <Truck
+                size={20}
+                color={selectedRole === "collector" ? "#FFFFFF" : "#6B7280"}
+              />
+              <Text
+                style={[
+                  styles.roleText,
+                  selectedRole === "collector" && styles.roleTextActive,
+                ]}
+              >
+                Collector
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <CustomInput
             placeholder="Full Name"
@@ -160,8 +208,55 @@ const styles = StyleSheet.create({
   subtitle: {
     textAlign: "center",
     color: "#6B7280",
-    marginBottom: 25,
+    marginBottom: 20,
     fontSize: 15,
+  },
+
+  // ===== ROLE TOGGLE =====
+  roleLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 8,
+  },
+
+  roleToggle: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 20,
+  },
+
+  roleOption: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
+  },
+
+  roleOptionActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary,
+  },
+
+  roleOptionActiveBlue: {
+    borderColor: "#2563EB",
+    backgroundColor: "#2563EB",
+  },
+
+  roleText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+
+  roleTextActive: {
+    color: "#FFFFFF",
   },
 
   footer: {

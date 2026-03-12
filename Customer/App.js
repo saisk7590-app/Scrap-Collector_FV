@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { View, ActivityIndicator } from "react-native";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
@@ -11,17 +12,17 @@ import SplashScreen from "./Screens/Auth/SplashScreen";
 import LoginScreen from "./Screens/Auth/LoginScreen";
 import SignUpScreen from "./Screens/Auth/SignUpScreen";
 
-// ================= MAIN NAVIGATION =================
+// ================= CUSTOMER NAVIGATION =================
 import HomeNavigator from "./Navigation/HomeNavigator"; // Bottom Tabs
 
-// ================= MAIN FLOW SCREENS =================
+// ================= CUSTOMER FLOW SCREENS =================
 import SellScrapScreen from "./Screens/Main/SellScrapScreen";
 import PickupSummary from "./Screens/Main/PickupSummary";
 import SchedulePickupScreen from "./Screens/Main/SchedulePickupScreen";
 import SuccessScreen from "./Screens/Main/SuccessScreen";
 import HistoryScreen from "./Screens/Main/HistoryScreen";
 
-// ================= PROFILE & SETTINGS =================
+// ================= CUSTOMER PROFILE & SETTINGS =================
 import ProfileScreen from "./Screens/Profile/ProfileScreen";
 import SettingsScreen from "./Screens/Settings/SettingsScreen";
 import EditProfileScreen from "./Screens/Profile/EditProfileScreen";
@@ -42,26 +43,47 @@ import NotificationsScreen from "./Screens/Support/NotificationsScreen";
 // ================= COMING =================
 import ComingSoonScreen from "./Screens/ComingSoonScreen";
 
+// ================= COLLECTOR SCREENS =================
+import CollectorDashboardScreen from "./Screens/Dashboard/CollectorDashboardScreen";
+import PickupDetailsScreen from "./Screens/Pickups/PickupDetailsScreen";
+import PickupActionScreen from "./Screens/Pickups/PickupActionScreen";
+import PickupHistoryScreen from "./Screens/Pickups/PickupHistoryScreen";
+import InvoiceScreen from "./Screens/Invoice/InvoiceScreen";
+import CollectorProfileScreen from "./Screens/Profile/CollectorProfileScreen";
+
 const Stack = createNativeStackNavigator();
 
 function NavigationWrapper() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, userRole } = useAuth();
 
   if (isLoading) {
-    return <SplashScreen />; // Or a simpler empty loading view if you prefer
+    return <SplashScreen />;
   }
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
+
         {!isAuthenticated ? (
           // ================= AUTH FLOW =================
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="SignUp" component={SignUpScreen} />
           </>
+
+        ) : userRole === "collector" ? (
+          // ================= COLLECTOR APP FLOW =================
+          <>
+            <Stack.Screen name="CollectorDashboard" component={CollectorDashboardScreen} />
+            <Stack.Screen name="PickupDetails" component={PickupDetailsScreen} />
+            <Stack.Screen name="PickupAction" component={PickupActionScreen} />
+            <Stack.Screen name="PickupHistory" component={PickupHistoryScreen} />
+            <Stack.Screen name="Invoice" component={InvoiceScreen} />
+            <Stack.Screen name="CollectorProfile" component={CollectorProfileScreen} />
+          </>
+
         ) : (
-          // ================= MAIN APP FLOW =================
+          // ================= CUSTOMER APP FLOW (default) =================
           <>
             <Stack.Screen name="Home" component={HomeNavigator} />
 
@@ -91,6 +113,7 @@ function NavigationWrapper() {
             <Stack.Screen name="ComingSoon" component={ComingSoonScreen} />
           </>
         )}
+
       </Stack.Navigator>
     </NavigationContainer>
   );
