@@ -180,3 +180,32 @@ exports.updatePickupStatus = async (req, res, next) => {
         next(err);
     }
 };
+
+/* =======================
+   GET COLLECTOR HISTORY
+======================= */
+exports.getCollectorHistory = async (req, res, next) => {
+    try {
+        const collectorId = req.user.id;
+
+        const result = await pool.query(
+            `SELECT p.*, prof.full_name as customer_name, prof.phone as customer_phone
+             FROM pickups p
+             JOIN profiles prof ON p.user_id = prof.user_id
+             WHERE p.collector_id = $1 AND p.status = 'completed'
+             ORDER BY p.updated_at DESC`,
+            [collectorId]
+        );
+
+        const pickups = result.rows.map(p => ({
+            ...p,
+            display_id: `PK${String(p.pickup_no).padStart(6, '0')}`
+        }));
+
+        return ApiResponse.success(res, "Collector history retrieved", { pickups });
+
+    } catch (err) {
+        next(err);
+    }
+};
+

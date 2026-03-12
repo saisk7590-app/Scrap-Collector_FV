@@ -42,6 +42,25 @@ export default function InvoiceScreen() {
   const invoiceDate = new Date().toLocaleDateString("en-IN");
 
   const [loading, setLoading] = useState(false);
+  const [collector, setCollector] = useState({ name: "Collector", id: "COL-..." });
+
+  React.useEffect(() => {
+    fetchCollectorProfile();
+  }, []);
+
+  const fetchCollectorProfile = async () => {
+    try {
+      const data = await apiRequest("/profile");
+      if (data.profile) {
+        setCollector({
+          name: data.profile.fullName || "Collector",
+          id: `COL-${data.profile.id.slice(0, 6).toUpperCase()}`,
+        });
+      }
+    } catch (err) {
+      console.log("Error fetching profile for invoice", err);
+    }
+  };
 
   const handleConfirm = async () => {
     setLoading(true);
@@ -84,8 +103,8 @@ export default function InvoiceScreen() {
                 customerName: pickup.customerName,
                 customerPhone: pickup.customerPhone,
                 customerAddress: pickup.address || "N/A",
-                collectorName: "Ramesh Kumar",
-                collectorId: "COL-001",
+                collectorName: collector.name,
+                collectorId: collector.id,
                 items,
                 totalAmount,
                 totalWeight,
@@ -117,8 +136,8 @@ export default function InvoiceScreen() {
 
           <InfoBlock
             title="Collected By"
-            line1="Ramesh Kumar"
-            line2="Collector ID: COL-001"
+            line1={collector.name}
+            line2={`Collector ID: ${collector.id}`}
           />
 
           <View style={styles.section}>

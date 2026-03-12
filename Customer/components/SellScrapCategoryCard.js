@@ -40,7 +40,8 @@ export default function SellScrapCategoryCard({
           {/* Heading row */}
           <View style={{ flexDirection: "row", marginTop: 8, paddingHorizontal: 4 }}>
             <Text style={{ flex: 1, fontWeight: "600", color: COLORS.textPrimary }}>Item</Text>
-            {(category === "Paper" || category === "Metal") ? (
+            {/* Find the first item in this category to determine the unit type */}
+            {items.length > 0 && config[items[0]]?.type === "weight" ? (
               <Text style={{ width: 110, textAlign: "center", fontWeight: "600", color: COLORS.textPrimary }}>Weight (kg)</Text>
             ) : (
               <Text style={{ width: 90, textAlign: "center", fontWeight: "600", color: COLORS.textPrimary }}>Qty</Text>

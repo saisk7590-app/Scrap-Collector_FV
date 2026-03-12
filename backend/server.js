@@ -9,6 +9,9 @@ const pool = require("./src/config/db");
 
 const app = express();
 
+// ✅ TRUST PROXY (Required for ngrok/proxies)
+app.set('trust proxy', 1);
+
 // ✅ SECURITY HEADERS
 app.use(helmet());
 

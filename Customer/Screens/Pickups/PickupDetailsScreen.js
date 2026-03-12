@@ -122,11 +122,32 @@ export default function PickupDetailsScreen({ navigation, route }) {
             <View key={index} style={styles.itemRow}>
               <View style={styles.itemLeft}>
                 <Package size={18} color="#2563EB" />
-                <Text style={styles.itemText}>{item.name}</Text>
+                <View>
+                  <Text style={styles.itemText}>{item.name}</Text>
+                  <Text style={{ fontSize: 11, color: '#6B7280' }}>
+                    ₹{item.price || 0} / {item.type === 'weight' ? 'kg' : 'unit'}
+                  </Text>
+                </View>
               </View>
-              <Text style={styles.qty}>Qty: {item.quantity}</Text>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.qty}>
+                  {item.type === 'weight' 
+                    ? `${item.weight} kg` 
+                    : `${item.quantity} unit(s)`}
+                </Text>
+                <Text style={{ fontWeight: '600', color: '#111827' }}>
+                  ₹{((item.weight || item.quantity || 0) * (item.price || 0)).toFixed(2)}
+                </Text>
+              </View>
             </View>
           ))}
+
+          <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderColor: '#F3F4F6', flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ fontWeight: '700', color: '#111827' }}>Estimated Total</Text>
+            <Text style={{ fontWeight: '700', color: '#2563EB' }}>
+              ₹{itemsList.reduce((sum, i) => sum + (i.weight || i.quantity || 0) * (i.price || 0), 0).toFixed(2)}
+            </Text>
+          </View>
         </View>
       </ScrollView>
 

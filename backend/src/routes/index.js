@@ -11,6 +11,12 @@ const authMiddleware = require('../middlewares/auth.middleware');
 router.get('/health', (req, res) => res.json({ status: 'Backend is healthy', timestamp: new Date() }));
 
 // =====================
+// DATA ROUTES (Public)
+// =====================
+const dataRoutes = require('./data.routes');
+router.use('/data', dataRoutes);
+
+// =====================
 // AUTH ROUTES (Public)
 // =====================
 router.post('/auth/register', authController.register);
@@ -29,6 +35,7 @@ router.put('/profile', authMiddleware, profileController.updateProfile);
 router.post('/pickups/create', authMiddleware, pickupController.createPickup);
 router.get('/pickups/my', authMiddleware, pickupController.getMyPickups);
 router.get('/pickups/today', authMiddleware, pickupController.getTodayPickups);
+router.get('/pickups/history', authMiddleware, pickupController.getCollectorHistory);
 router.get('/pickups/all', authMiddleware, pickupController.getAllPickups);
 router.put('/pickups/:id/status', authMiddleware, pickupController.updatePickupStatus);
 

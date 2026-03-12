@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ScrollView, View, Text, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
+import { ScrollView, View, Text, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Header from "../../components/Header";
@@ -7,21 +7,53 @@ import CustomButton from "../../components/CustomButton";
 import SellScrapCategoryCard from "../../components/SellScrapCategoryCard";
 
 import { COLORS } from "../../constants/colors";
-import { SCRAP_CATEGORIES, SCRAP_DATA, SCRAP_CONFIG } from "../../constants/scrap";
 import { apiRequest } from "../../src/lib/api";
 
 export default function SellScrapScreen({ navigation, route }) {
   const selectedCategory = route?.params?.category || null;
   const [expanded, setExpanded] = useState(selectedCategory);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitLoading, setSubmitLoading] = useState(false);
 
-  const [items, setItems] = useState(() => {
-    const obj = {};
-    Object.values(SCRAP_DATA).flat().forEach((i) => {
-      obj[i] = { selected: false, quantity: 0, weight: "" };
-    });
-    return obj;
-  });
+  const [categories, setCategories] = useState([]);
+  const [scrapData, setScrapData] = useState({});
+  const [scrapConfig, setScrapConfig] = useState({});
+  const [items, setItems] = useState({});
+
+  useEffect(() => {
+    fetchScrapData();
+  }, []);
+
+  const fetchScrapData = async () => {
+    try {
+      setLoading(true);
+      const [catData, itemData] = await Promise.all([
+        apiRequest("/data/categories"),
+        apiRequest("/data/items"),
+      ]);
+
+      if (catData?.categories) {
+        setCategories(catData.categories.map((c) => c.name));
+      }
+
+      if (itemData?.scrapData && itemData?.scrapConfig) {
+        setScrapData(itemData.scrapData);
+        setScrapConfig(itemData.scrapConfig);
+
+        // Initialize state for each item (selected: false, quantity: 0, weight: "")
+        const initObj = {};
+        Object.values(itemData.scrapData).flat().forEach((i) => {
+          initObj[i] = { selected: false, quantity: 0, weight: "" };
+        });
+        setItems(initObj);
+      }
+    } catch (err) {
+      console.log("Error fetching dynamic scrap data:", err);
+      Alert.alert("Error", "Could not load scrap items.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleCategory = (cat) => setExpanded(expanded === cat ? null : cat);
 
@@ -55,6 +87,8 @@ export default function SellScrapScreen({ navigation, route }) {
         name: k,
         quantity: items[k].quantity,
         weight: parseFloat(items[k].weight) || 0,
+        price: scrapConfig[k]?.price || 0,
+        type: scrapConfig[k]?.type || "weight",
       }));
 
     if (selectedItems.length === 0) {
@@ -63,7 +97,7 @@ export default function SellScrapScreen({ navigation, route }) {
     }
 
     try {
-      setLoading(true);
+      setSubmitLoading(true);
 
       const totalWeight = selectedItems.reduce((acc, i) => acc + i.weight, 0);
 
@@ -81,14 +115,26 @@ export default function SellScrapScreen({ navigation, route }) {
       } else {
         throw new Error("Failed to get scrap request data from server");
       }
-
     } catch (err) {
       console.log("SellScrap Submit Error:", err);
       Alert.alert("Request Failed", err.message || "Could not create scrap request. Please try again.");
     } finally {
-      setLoading(false);
+      setSubmitLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.white }}>
+        <SafeAreaView style={{ backgroundColor: COLORS.primary }}>
+          <Header variant="main" title="Sell Scrap" showBack />
+        </SafeAreaView>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
@@ -97,13 +143,13 @@ export default function SellScrapScreen({ navigation, route }) {
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
-        {SCRAP_CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <SellScrapCategoryCard
             key={cat}
             category={cat}
-            items={SCRAP_DATA[cat]}
+            items={scrapData[cat] || []}
             dataObj={items}
-            config={SCRAP_CONFIG}
+            config={scrapConfig}
             expanded={expanded}
             toggleCategory={toggleCategory}
             toggleItem={toggleItem}
@@ -114,7 +160,7 @@ export default function SellScrapScreen({ navigation, route }) {
 
         <View style={{ marginTop: 24, marginBottom: 40 }}>
           <CustomButton
-            title={loading ? "Processing..." : "Sell Scrap"}
+            title={submitLoading ? "Processing..." : "Sell Scrap"}
             onPress={handleSubmit}
           />
         </View>

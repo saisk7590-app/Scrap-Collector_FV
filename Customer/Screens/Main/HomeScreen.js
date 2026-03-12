@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import { ScrollView, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import { Recycle, FileText, Cpu, Coins, GlassWater } from "lucide-react-native";
+import * as LucideIcons from "lucide-react-native";
 
 import Header from "../../components/Header";
 import WalletInfoCard from "../../components/WalletInfoCard";
@@ -12,44 +12,42 @@ import CustomButton from "../../components/CustomButton";
 import { COLORS, SPACING, ROUTES } from "../../constants";
 import { apiRequest } from "../../src/lib/api";
 
-const CATEGORY_DATA = [
-  { name: "Plastic", icon: Recycle, iconBg: "#3B82F6", bg: "#EFF6FF" },
-  { name: "E-Waste", icon: Cpu, iconBg: "#EAB308", bg: "#FEFCE8" },
-  { name: "Paper", icon: FileText, iconBg: "#9CA3AF", bg: "#F9FAFB" },
-  { name: "Metal", icon: Coins, iconBg: "#94A3B8", bg: "#F8FAFC" },
-  { name: "Glass", icon: GlassWater, iconBg: "#0EA5E9", bg: "#F0F9FF" },
-];
-
 export default function HomeScreen() {
   const navigation = useNavigation();
   const [profile, setProfile] = useState(null);
   const [totalScrap, setTotalScrap] = useState(0);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      const [profileData, pickupsData] = await Promise.all([
-        apiRequest("/profile"),
-        apiRequest("/pickups/my"),
+      const [profileData, pickupsData, categoriesData] = await Promise.all([
+        apiRequest("/profile").catch(() => null),
+        apiRequest("/pickups/my").catch(() => null),
+        apiRequest("/data/categories").catch(() => null),
       ]);
 
-      if (profileData.profile) {
+      if (profileData && profileData.profile) {
         setProfile({
           full_name: profileData.profile.fullName,
           wallet_balance: profileData.profile.walletBalance,
         });
       }
 
-      if (pickupsData.pickups) {
+      if (pickupsData && pickupsData.pickups) {
         const completed = pickupsData.pickups.filter(p => p.status === 'completed');
         const scrap = completed.reduce((sum, p) => sum + Number(p.total_qty || 0), 0);
         setTotalScrap(scrap);
       }
+
+      if (categoriesData && categoriesData.categories) {
+        setCategories(categoriesData.categories);
+      }
     } catch (err) {
       console.log("Home fetch error:", err);
-      setProfile(null);
+      // Profile handles itself by defaulting to null
     } finally {
       setLoading(false);
     }
@@ -100,20 +98,25 @@ export default function HomeScreen() {
             marginTop: SPACING.lg,
           }}
         >
-          {CATEGORY_DATA.map((item) => (
-            <CategoryCard
-              key={item.name}
-              title={item.name}
-              icon={item.icon}
-              iconBg={item.iconBg}
-              cardBg={item.bg}
-              onPress={() =>
-                navigation.navigate(ROUTES.SELL_SCRAP, {
-                  category: item.name,
-                })
-              }
-            />
-          ))}
+          {categories.map((item) => {
+            // Find the lucide-react-native icon by name (e.g. "Recycle")
+            const IconComponent = LucideIcons[item.icon_name] || LucideIcons.HelpCircle;
+
+            return (
+              <CategoryCard
+                key={item.id}
+                title={item.name}
+                icon={IconComponent}
+                iconBg={item.icon_bg}
+                cardBg={item.card_bg}
+                onPress={() =>
+                  navigation.navigate(ROUTES.SELL_SCRAP, {
+                    category: item.name,
+                  })
+                }
+              />
+            );
+          })}
         </View>
       </ScrollView>
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, FlatList, Alert } from "react-native";
+import { View, Text, FlatList, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Clock } from "lucide-react-native";
 
@@ -8,16 +8,30 @@ import Header from "../../components/Header";
 import { COLORS } from "../../constants/colors";
 import { apiRequest } from "../../src/lib/api";
 
-const timeSlots = [
-  { id: "1", time: "10:00 AM – 12:00 PM" },
-  { id: "2", time: "12:00 PM – 2:00 PM" },
-  { id: "3", time: "2:00 PM – 4:00 PM" },
-];
-
 export default function SchedulePickupScreen({ navigation, route }) {
   const { items, alternateNumber } = route.params;
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(true);
+
+  React.useEffect(() => {
+    fetchTimeSlots();
+  }, []);
+
+  const fetchTimeSlots = async () => {
+    try {
+      const data = await apiRequest("/data/time-slots");
+      if (data.timeSlots) {
+        // Map DB format {id, slot_text} to component format {id, time}
+        setTimeSlots(data.timeSlots.map(s => ({ id: s.id, time: s.slot_text })));
+      }
+    } catch (err) {
+      console.log("Error fetching time slots:", err);
+    } finally {
+      setSlotsLoading(false);
+    }
+  };
 
   const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
   const totalWeight = items.reduce((sum, i) => sum + i.weight, 0);
@@ -116,6 +130,9 @@ export default function SchedulePickupScreen({ navigation, route }) {
             <Text style={{ fontSize: 16, fontWeight: "600", marginHorizontal: 16, marginBottom: 10 }}>
               Select Pickup Time
             </Text>
+            {slotsLoading && (
+              <ActivityIndicator color={COLORS.primary} style={{ marginBottom: 10 }} />
+            )}
           </>
         }
         renderItem={({ item }) => {

@@ -22,10 +22,13 @@ export default function ScrapItemRow({ item, config, data, onQtyChange, onWeight
             backgroundColor: isSelected ? COLORS.primary : "transparent",
           }}
         />
-        <Text style={{ flex: 1, color: COLORS.textPrimary }}>{item}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: COLORS.textPrimary, fontWeight: "500" }}>{item}</Text>
+          <Text style={{ fontSize: 12, color: COLORS.textSecondary }}>₹{config[item]?.price || 0} / {config[item]?.type === "weight" ? "kg" : "unit"}</Text>
+        </View>
       </TouchableOpacity>
 
-      {config[item] === "quantity" && (
+      {config[item]?.type === "quantity" && (
         <View style={{ flexDirection: "row", alignItems: "center", width: 110, justifyContent: "center" }}>
           <TouchableOpacity onPress={() => onQtyChange(item, -1)} style={{ width: 32, height: 32, justifyContent: "center", alignItems: "center", borderRadius: 6, backgroundColor: "#F3F4F6" }}>
             <Minus size={16} />
@@ -44,7 +47,7 @@ export default function ScrapItemRow({ item, config, data, onQtyChange, onWeight
         </View>
       )}
 
-      {config[item] === "weight" && (
+      {config[item]?.type === "weight" && (
         <View style={{ flexDirection: "row", alignItems: "center", width: 110, justifyContent: "center" }}>
           <TextInput
             style={{ width: 70, height: 36, borderWidth: 1, borderColor: "#D1D5DB", textAlign: "center", borderRadius: 6 }}

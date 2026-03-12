@@ -10,21 +10,19 @@ export default function PickupCard({ data }) {
     : "";
 
   const getItemDisplayValue = (item) => {
-    // Weight-based item
-    if (item.weight && item.weight > 0) {
-      return `${item.weight} kg`;
+    // Check for type field first (new standardized structure)
+    if (item.type === 'weight') {
+      return `${item.weight || 0} kg`;
+    }
+    if (item.type === 'quantity' || item.type === 'unit') {
+      return `${item.quantity || item.qty || 0} pcs`;
     }
 
-    // Quantity-based item (support multiple possible keys)
-    if (item.qty && item.qty > 0) {
-      return `${item.qty} pcs`;
-    }
+    // Fallback logic for legacy data
+    if (item.weight && item.weight > 0) return `${item.weight} kg`;
+    if (item.qty && item.qty > 0) return `${item.qty} pcs`;
+    if (item.quantity && item.quantity > 0) return `${item.quantity} pcs`;
 
-    if (item.quantity && item.quantity > 0) {
-      return `${item.quantity} pcs`;
-    }
-
-    // If nothing exists
     return "—";
   };
 
@@ -53,13 +51,27 @@ export default function PickupCard({ data }) {
               marginBottom: 6,
             }}
           >
-            <Text style={{ fontSize: 15, fontWeight: "600" }}>
-              {item.name}
-            </Text>
+            <View>
+              <Text style={{ fontSize: 15, fontWeight: "600" }}>
+                {item.name}
+              </Text>
+              {item.price > 0 && (
+                <Text style={{ fontSize: 11, color: COLORS.textSecondary }}>
+                  ₹{item.price} / {item.type === 'weight' ? 'kg' : 'unit'}
+                </Text>
+              )}
+            </View>
 
-            <Text style={{ color: COLORS.textSecondary }}>
-              {getItemDisplayValue(item)}
-            </Text>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ color: COLORS.textSecondary }}>
+                {getItemDisplayValue(item)}
+              </Text>
+              {item.price > 0 && (
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.textPrimary }}>
+                  ₹{((item.weight || item.quantity || item.qty || 0) * item.price).toFixed(2)}
+                </Text>
+              )}
+            </View>
           </View>
         ))}
 

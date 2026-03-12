@@ -9,10 +9,23 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import CustomButton from "../../components/CustomButton";
 import { COLORS } from "../../constants/colors";
+import { getStoredUser } from "../../src/lib/api";
 
 export default function PickupSummaryScreen({ navigation, route }) {
   const { items } = route.params;
   const [alternateNumber, setAlternateNumber] = useState("");
+  const [userPhone, setUserPhone] = useState("");
+
+  React.useEffect(() => {
+    loadUser();
+  }, []);
+
+  const loadUser = async () => {
+    const user = await getStoredUser();
+    if (user) {
+      setUserPhone(user.phone || user.mobile || "N/A");
+    }
+  };
 
   const totalQty = items.reduce((s, i) => s + i.quantity, 0);
   const totalWeight = items.reduce((s, i) => s + i.weight, 0);
@@ -27,23 +40,43 @@ export default function PickupSummaryScreen({ navigation, route }) {
 
         {items.map((item, i) => (
           <View key={i} style={styles.row}>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.meta}>
-              Qty: {item.quantity} | {item.weight} kg
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.meta}>
+                Price: ₹{item.price || 0} / {item.type === 'weight' ? 'kg' : 'unit'}
+              </Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.meta}>
+                {item.type === 'weight' 
+                  ? `${item.weight} kg` 
+                  : `${item.quantity} units`}
+              </Text>
+              <Text style={{ fontWeight: '600', color: COLORS.primary }}>
+                ₹{((item.weight || item.quantity || 0) * (item.price || 0)).toFixed(2)}
+              </Text>
+            </View>
           </View>
         ))}
 
         <View style={styles.totalBox}>
-          <Text>Total Items: {totalQty}</Text>
-          <Text>Total Weight: {totalWeight} kg</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={styles.muted}>Total Weight:</Text>
+            <Text style={{ fontWeight: '600' }}>{totalWeight} kg</Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700' }}>Estimated Total:</Text>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.primary }}>
+              ₹{items.reduce((sum, item) => sum + (item.weight || item.quantity || 0) * (item.price || 0), 0).toFixed(2)}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.contactBox}>
           <Text style={styles.sectionTitle}>Contact Details</Text>
 
           <Text style={styles.primaryText}>
-            Primary: +91 9XXXXXXXXX
+            Primary: +91 {userPhone}
           </Text>
 
           <TextInput

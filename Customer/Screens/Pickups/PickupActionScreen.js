@@ -29,10 +29,10 @@ export default function PickupActionScreen({ navigation, route }) {
     // Map to the format needed by the screen
     return list.map(item => ({
       category: item.name,
-      price: item.price || 15, // Default price fallback
+      price: item.price || 0,
       expectedWeight: item.weight || item.quantity || 0,
       actualWeight: item.weight || item.quantity || 0,
-      pricingType: item.weight > 0 ? 'weight' : 'quantity'
+      pricingType: item.type || (item.weight > 0 ? 'weight' : 'quantity')
     }));
   }, [pickup]);
 
@@ -86,7 +86,7 @@ export default function PickupActionScreen({ navigation, route }) {
         {items.map((item, index) => (
           <View key={index} style={styles.card}>
             <Text style={styles.itemTitle}>{item.category}</Text>
-            <Text style={styles.price}>₹{item.price} / kg</Text>
+            <Text style={styles.price}>₹{item.price} / {item.pricingType === 'weight' ? 'kg' : 'unit'}</Text>
 
             {/* SIDE BY SIDE */}
             <View style={styles.compareRow}>
@@ -94,7 +94,7 @@ export default function PickupActionScreen({ navigation, route }) {
               <View style={styles.box}>
                 <Text style={styles.boxLabel}>Customer Given</Text>
                 <Text style={styles.boxValue}>
-                  {item.expectedWeight} kg
+                  {item.expectedWeight} {item.pricingType === 'weight' ? 'kg' : 'unit'}
                 </Text>
                 <Text style={styles.boxAmount}>
                   ₹{item.expectedWeight * item.price}
@@ -110,7 +110,7 @@ export default function PickupActionScreen({ navigation, route }) {
                 <View style={styles.row}>
                   <TouchableOpacity
                     style={styles.controlBtn}
-                    onPress={() => updateWeight(index, -0.5)}
+                    onPress={() => updateWeight(index, item.pricingType === 'weight' ? -0.5 : -1)}
                   >
                     <Minus size={16} />
                   </TouchableOpacity>
@@ -124,7 +124,7 @@ export default function PickupActionScreen({ navigation, route }) {
 
                   <TouchableOpacity
                     style={styles.controlBtnPrimary}
-                    onPress={() => updateWeight(index, 0.5)}
+                    onPress={() => updateWeight(index, item.pricingType === 'weight' ? 0.5 : 1)}
                   >
                     <Plus size={16} color="#fff" />
                   </TouchableOpacity>
@@ -132,6 +132,9 @@ export default function PickupActionScreen({ navigation, route }) {
 
                 <Text style={styles.boxAmount}>
                   ₹{item.actualWeight * item.price}
+                </Text>
+                <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>
+                  Unit: {item.pricingType === 'weight' ? 'kg' : 'unit'}
                 </Text>
               </View>
             </View>

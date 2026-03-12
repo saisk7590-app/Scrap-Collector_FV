@@ -1,53 +1,38 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Calendar, MapPin, Wallet, Package } from "lucide-react-native";
 
-const completedPickups = [
-  {
-    id: "1",
-    customerName: "Priya Sharma",
-    date: "Jan 9, 2026",
-    timeSlot: "8:00 AM - 9:00 AM",
-    scrapType: "Paper & Plastic",
-    totalWeight: 15.5,
-    earnings: 850,
-    address: "Jubilee Hills, Hyderabad",
-    paymentMode: "Cash",
-  },
-  {
-    id: "2",
-    customerName: "Vikram Patel",
-    date: "Jan 8, 2026",
-    timeSlot: "4:00 PM - 5:00 PM",
-    scrapType: "Metal",
-    totalWeight: 22,
-    earnings: 1200,
-    address: "Kukatpally, Hyderabad",
-    paymentMode: "Online",
-  },
-  {
-    id: "3",
-    customerName: "Anita Desai",
-    date: "Jan 7, 2026",
-    timeSlot: "11:00 AM - 12:00 PM",
-    scrapType: "E-Waste",
-    totalWeight: 8.5,
-    earnings: 950,
-    address: "Banjara Hills, Hyderabad",
-    paymentMode: "Cash",
-  },
-];
+import { apiRequest } from "../../src/lib/api";
 
 export default function PickupHistoryScreen({ navigation }) {
+  const [completedPickups, setCompletedPickups] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    try {
+      const data = await apiRequest("/pickups/history");
+      setCompletedPickups(data.pickups || []);
+    } catch (err) {
+      console.log("Error fetching history:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const totalEarnings = completedPickups.reduce(
-    (sum, p) => sum + p.earnings,
+    (sum, p) => sum + Number(p.amount || 0),
     0
   );
 
@@ -85,63 +70,71 @@ export default function PickupHistoryScreen({ navigation }) {
         </View>
 
         {/* HISTORY LIST */}
-        {completedPickups.map((pickup) => (
-          <View key={pickup.id} style={styles.card}>
-            <View style={styles.cardTop}>
-              <View>
-                <Text style={styles.customerName}>
-                  {pickup.customerName}
-                </Text>
-                <Text style={styles.scrapType}>
-                  ID: {pickup.display_id || pickup.id.slice(0, 6)}
-                </Text>
-                <Text style={styles.scrapType}>
-                  {pickup.scrapType}
-                </Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#2563EB" style={{ marginTop: 40 }} />
+        ) : completedPickups.length === 0 ? (
+          <Text style={{ textAlign: 'center', marginTop: 40, color: '#6B7280' }}>No completed pickups yet</Text>
+        ) : (
+          completedPickups.map((pickup) => (
+            <View key={pickup.id} style={styles.card}>
+              <View style={styles.cardTop}>
+                <View>
+                  <Text style={styles.customerName}>
+                    {pickup.customer_name || 'Customer'}
+                  </Text>
+                  <Text style={styles.scrapType}>
+                    ID: {pickup.display_id || pickup.id.slice(0, 6)}
+                  </Text>
+                  <Text style={styles.scrapType}>
+                    {Array.isArray(pickup.items) 
+                      ? pickup.items.map(i => i.name).join(', ') 
+                      : (typeof pickup.items === 'string' 
+                          ? JSON.parse(pickup.items).map(i => i.name).join(', ') 
+                          : 'Scrap Items')}
+                  </Text>
+                </View>
+
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={styles.earning}>₹{pickup.amount || 0}</Text>
+                  <Text style={styles.completedBadge}>Completed</Text>
+                </View>
               </View>
 
-              <View style={{ alignItems: "flex-end" }}>
-                <Text style={styles.earning}>₹{pickup.earnings}</Text>
-                <Text style={styles.completedBadge}>Completed</Text>
-              </View>
-            </View>
+              <View style={styles.row}>
+                <View style={styles.rowItem}>
+                  <Calendar size={14} color="#6B7280" />
+                  <Text style={styles.rowText}>{new Date(pickup.created_at).toLocaleDateString()}</Text>
+                </View>
 
-            <View style={styles.row}>
+                <View style={styles.rowItem}>
+                  <Package size={14} color="#6B7280" />
+                  <Text style={styles.rowText}>
+                    {pickup.total_weight || 0} kg
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
               <View style={styles.rowItem}>
-                <Calendar size={14} color="#6B7280" />
-                <Text style={styles.rowText}>{pickup.date}</Text>
+                <MapPin size={14} color="#6B7280" />
+                <Text style={styles.address}>{pickup.address || 'Address not provided'}</Text>
               </View>
 
-              <View style={styles.rowItem}>
-                <Package size={14} color="#6B7280" />
-                <Text style={styles.rowText}>
-                  {pickup.totalWeight} kg
+              <View style={styles.footer}>
+                <Text style={styles.time}>{pickup.time_slot || 'Anytime'}</Text>
+                <Text
+                  style={[
+                    styles.payment,
+                    styles.cash
+                  ]}
+                >
+                  Cash
                 </Text>
               </View>
             </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.rowItem}>
-              <MapPin size={14} color="#6B7280" />
-              <Text style={styles.address}>{pickup.address}</Text>
-            </View>
-
-            <View style={styles.footer}>
-              <Text style={styles.time}>{pickup.timeSlot}</Text>
-              <Text
-                style={[
-                  styles.payment,
-                  pickup.paymentMode === "Cash"
-                    ? styles.cash
-                    : styles.online,
-                ]}
-              >
-                {pickup.paymentMode}
-              </Text>
-            </View>
-          </View>
-        ))}
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );

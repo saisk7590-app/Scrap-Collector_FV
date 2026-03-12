@@ -78,6 +78,46 @@ CREATE TABLE IF NOT EXISTS scrap_requests (
 CREATE INDEX IF NOT EXISTS idx_scrap_requests_user_id ON scrap_requests(user_id);
 
 -- =====================
+-- 5. SCRAP CATEGORIES
+-- =====================
+CREATE TABLE IF NOT EXISTS scrap_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(100) UNIQUE NOT NULL,
+  icon_name VARCHAR(50) NOT NULL,
+  icon_bg VARCHAR(20) NOT NULL,
+  card_bg VARCHAR(20) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- =====================
+-- 6. SCRAP ITEMS
+-- =====================
+CREATE TABLE IF NOT EXISTS scrap_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category_id UUID NOT NULL REFERENCES scrap_categories(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  measurement_type VARCHAR(20) NOT NULL CHECK (measurement_type IN ('weight', 'quantity')),
+  base_price DECIMAL(10,2) DEFAULT 0.00,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(category_id, name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_scrap_items_category_id ON scrap_items(category_id);
+
+-- =====================
+-- 7. TIME SLOTS
+-- =====================
+CREATE TABLE IF NOT EXISTS time_slots (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slot_text VARCHAR(100) UNIQUE NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- =====================
 -- DONE ✅
 -- =====================
 -- After running this, start the backend:

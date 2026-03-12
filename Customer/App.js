@@ -85,7 +85,7 @@ function NavigationWrapper() {
         ) : (
           // ================= CUSTOMER APP FLOW (default) =================
           <>
-            <Stack.Screen name="Home" component={HomeNavigator} />
+            <Stack.Screen name="MainTabs" component={HomeNavigator} />
 
             {/* ================= SCRAP FLOW ================= */}
             <Stack.Screen name="SellScrap" component={SellScrapScreen} />
@@ -94,8 +94,8 @@ function NavigationWrapper() {
             <Stack.Screen name="Success" component={SuccessScreen} />
 
             {/* ================= OTHER SCREENS ================= */}
-            <Stack.Screen name="History" component={HistoryScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="HistoryStack" component={HistoryScreen} />
+            <Stack.Screen name="ProfileStack" component={ProfileScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="Wallet" component={WalletScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
