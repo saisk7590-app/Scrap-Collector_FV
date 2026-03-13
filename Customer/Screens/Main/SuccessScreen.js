@@ -11,7 +11,7 @@ export default function PickupSuccessScreen({ navigation, route }) {
     const timer = setTimeout(() => {
       navigation.reset({
         index: 0,
-        routes: [{ name: "Home" }],
+        routes: [{ name: "MainTabs" }],
       });
     }, 5000); // stays for 5 seconds
 

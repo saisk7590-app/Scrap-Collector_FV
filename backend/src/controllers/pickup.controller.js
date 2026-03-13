@@ -46,7 +46,11 @@ exports.getMyPickups = async (req, res, next) => {
         const userId = req.user.id;
 
         const result = await pool.query(
-            'SELECT * FROM pickups WHERE user_id = $1 ORDER BY created_at DESC',
+            `SELECT p.*, prof.full_name as customer_name, prof.phone as customer_phone, prof.address as customer_profile_address
+             FROM pickups p
+             LEFT JOIN profiles prof ON p.user_id = prof.user_id
+             WHERE p.user_id = $1 
+             ORDER BY p.created_at DESC`,
             [userId]
         );
 
@@ -74,10 +78,12 @@ exports.getTodayPickups = async (req, res, next) => {
 
         // Only show pickups that are UNASSIGNED or ASSIGNED TO ME
         const result = await pool.query(
-            `SELECT * FROM pickups 
-       WHERE created_at >= $1 AND created_at <= $2
-       AND (collector_id IS NULL OR collector_id = $3)
-       ORDER BY created_at ASC`,
+            `SELECT p.*, prof.full_name as customer_name, prof.phone as customer_phone
+             FROM pickups p
+             LEFT JOIN profiles prof ON p.user_id = prof.user_id
+             WHERE p.created_at >= $1 AND p.created_at <= $2
+             AND (p.collector_id IS NULL OR p.collector_id = $3)
+             ORDER BY p.created_at ASC`,
             [startOfDay, endOfDay, collectorId]
         );
 
@@ -99,7 +105,10 @@ exports.getTodayPickups = async (req, res, next) => {
 exports.getAllPickups = async (req, res, next) => {
     try {
         const result = await pool.query(
-            'SELECT * FROM pickups ORDER BY created_at DESC'
+            `SELECT p.*, prof.full_name as customer_name, prof.phone as customer_phone
+             FROM pickups p
+             LEFT JOIN profiles prof ON p.user_id = prof.user_id
+             ORDER BY p.created_at DESC`
         );
 
         const pickups = result.rows.map(p => ({

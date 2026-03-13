@@ -37,6 +37,8 @@ export default function SchedulePickupScreen({ navigation, route }) {
   const totalWeight = items.reduce((sum, i) => sum + i.weight, 0);
 
   const handleConfirm = async () => {
+    if (loading) return;
+
     if (!selectedSlot) {
       Alert.alert("Select Time", "Please select a pickup time slot");
       return;

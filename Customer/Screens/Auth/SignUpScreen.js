@@ -70,13 +70,22 @@ export default function SignUpScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={[
+        styles.safeArea,
+        selectedRole === "collector" && styles.safeAreaCollector,
+      ]}
+    >
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.card}>
-          <Recycle size={60} color={COLORS.primary} style={styles.logo} />
+          <Recycle
+            size={60}
+            color={selectedRole === "collector" ? COLORS.info : COLORS.primary}
+            style={styles.logo}
+          />
 
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join and start recycling today</Text>
@@ -151,6 +160,7 @@ export default function SignUpScreen() {
             title="Sign Up"
             onPress={handleSignUp}
             loading={loading}
+            variant={selectedRole === "collector" ? "info" : "primary"}
           />
 
           <View style={styles.footer}>
@@ -158,7 +168,10 @@ export default function SignUpScreen() {
               Already have an account?{" "}
             </Text>
             <Text
-              style={styles.link}
+              style={[
+                styles.link,
+                selectedRole === "collector" && styles.linkCollector,
+              ]}
               onPress={() => navigation.navigate(ROUTES.LOGIN)}
             >
               Login
@@ -174,6 +187,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#DCFCE7", // Light green
+  },
+  safeAreaCollector: {
+    backgroundColor: "#EFF6FF", // Light blue
   },
 
   container: {
@@ -274,5 +290,8 @@ const styles = StyleSheet.create({
     color: COLORS.primary, // Green primary
     fontSize: FONTS.size.md,
     fontWeight: "bold",
+  },
+  linkCollector: {
+    color: COLORS.info, // Blue info
   },
 });

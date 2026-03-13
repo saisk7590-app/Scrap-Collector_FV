@@ -27,6 +27,8 @@ import ProfileScreen from "./Screens/Profile/ProfileScreen";
 import SettingsScreen from "./Screens/Settings/SettingsScreen";
 import EditProfileScreen from "./Screens/Profile/EditProfileScreen";
 import ManageAddressesScreen from "./Screens/Profile/ManageAddressesScreen";
+import AddAddressScreen from "./Screens/Profile/AddAddressScreen";
+import EditAddressScreen from "./Screens/Profile/EditAddressScreen";
 
 // ================= WALLET =================
 import WalletScreen from "./Screens/Wallet/WalletScreen";
@@ -100,6 +102,8 @@ function NavigationWrapper() {
             <Stack.Screen name="Wallet" component={WalletScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="ManageAddresses" component={ManageAddressesScreen} />
+            <Stack.Screen name="AddAddress" component={AddAddressScreen} />
+            <Stack.Screen name="EditAddress" component={EditAddressScreen} />
             {/* ================= SUPPORT SCREENS ================= */}
             <Stack.Screen name="Help" component={HelpScreen} />
             <Stack.Screen name="FAQ" component={FAQScreen} />

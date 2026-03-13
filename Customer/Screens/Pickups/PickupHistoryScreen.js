@@ -78,7 +78,7 @@ export default function PickupHistoryScreen({ navigation }) {
           completedPickups.map((pickup) => (
             <View key={pickup.id} style={styles.card}>
               <View style={styles.cardTop}>
-                <View>
+                <View style={{ flex: 1, marginRight: 8 }}>
                   <Text style={styles.customerName}>
                     {pickup.customer_name || 'Customer'}
                   </Text>
@@ -94,8 +94,8 @@ export default function PickupHistoryScreen({ navigation }) {
                   </Text>
                 </View>
 
-                <View style={{ alignItems: "flex-end" }}>
-                  <Text style={styles.earning}>₹{pickup.amount || 0}</Text>
+                <View style={{ alignItems: "flex-end", minWidth: 80 }}>
+                  <Text style={styles.earning} numberOfLines={1}>₹{pickup.amount || 0}</Text>
                   <Text style={styles.completedBadge}>Completed</Text>
                 </View>
               </View>
@@ -118,7 +118,15 @@ export default function PickupHistoryScreen({ navigation }) {
 
               <View style={styles.rowItem}>
                 <MapPin size={14} color="#6B7280" />
-                <Text style={styles.address}>{pickup.address || 'Address not provided'}</Text>
+                <Text style={styles.address}>
+                  {[
+                    pickup.house_no,
+                    pickup.address,
+                    pickup.area,
+                    pickup.pincode,
+                    pickup.city
+                  ].filter(Boolean).join(', ') || 'Address not provided'}
+                </Text>
               </View>
 
               <View style={styles.footer}>
@@ -218,9 +226,10 @@ const styles = StyleSheet.create({
   },
 
   earning: {
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
     color: "#2563EB",
+    textAlign: "right",
   },
 
   completedBadge: {

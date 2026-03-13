@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   phone VARCHAR(20),
   role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('customer', 'collector', 'admin')),
   wallet_balance DECIMAL(10,2) DEFAULT 0.00,
+  address TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -116,6 +117,26 @@ CREATE TABLE IF NOT EXISTS time_slots (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- =====================
+-- 8. USER ADDRESSES
+-- =====================
+CREATE TABLE IF NOT EXISTS user_addresses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type VARCHAR(20) DEFAULT 'Home', -- Home, Office, Other
+  house_no VARCHAR(100),
+  area VARCHAR(100),
+  pincode VARCHAR(10),
+  landmark TEXT,
+  address TEXT NOT NULL,
+  is_default BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for fast user_id lookups
+CREATE INDEX IF NOT EXISTS idx_user_addresses_user_id ON user_addresses(user_id);
 
 -- =====================
 -- DONE ✅

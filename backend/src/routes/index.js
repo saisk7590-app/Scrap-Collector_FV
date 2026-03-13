@@ -45,4 +45,9 @@ router.put('/pickups/:id/status', authMiddleware, pickupController.updatePickupS
 router.post('/scrap/create', authMiddleware, scrapController.createScrapRequest);
 router.get('/scrap/my', authMiddleware, scrapController.getMyScrapRequests);
 
+// =====================
+// ADDRESS ROUTES (Protected)
+// =====================
+router.use('/addresses', require('./address.routes'));
+
 module.exports = router;

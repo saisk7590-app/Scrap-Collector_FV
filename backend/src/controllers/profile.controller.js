@@ -27,6 +27,7 @@ exports.getProfile = async (req, res, next) => {
                 phone: profile.phone,
                 role: profile.role,
                 walletBalance: profile.wallet_balance,
+                address: profile.address,
                 createdAt: profile.created_at,
             }
         });
@@ -43,9 +44,9 @@ exports.getProfile = async (req, res, next) => {
 exports.updateProfile = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const { fullName, phone } = req.body;
-
-        if (!fullName && !phone) {
+        const { fullName, phone, address } = req.body;
+ 
+        if (!fullName && !phone && !address) {
             return res.status(400).json({ message: "At least one field is required" });
         }
 
@@ -62,6 +63,11 @@ exports.updateProfile = async (req, res, next) => {
         if (phone) {
             fields.push(`phone = $${paramIndex++}`);
             values.push(phone);
+        }
+ 
+        if (address) {
+            fields.push(`address = $${paramIndex++}`);
+            values.push(address);
         }
 
         fields.push(`updated_at = NOW()`);
@@ -85,6 +91,7 @@ exports.updateProfile = async (req, res, next) => {
                 phone: profile.phone,
                 role: profile.role,
                 walletBalance: profile.wallet_balance,
+                address: profile.address,
             }
         });
 

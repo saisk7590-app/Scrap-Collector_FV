@@ -14,6 +14,7 @@ import {
   Calendar,
   Clock,
   Package,
+  User,
 } from "lucide-react-native";
 
 export default function PickupDetailsScreen({ navigation, route }) {
@@ -56,11 +57,11 @@ export default function PickupDetailsScreen({ navigation, route }) {
 
           <View style={styles.infoRow}>
             <View style={styles.iconCircle}>
-              <Phone size={18} color="#2563EB" />
+              <User size={18} color="#2563EB" />
             </View>
             <View>
               <Text style={styles.label}>Customer Name</Text>
-              <Text style={styles.value}>{pickup.customerName}</Text>
+              <Text style={styles.value}>{pickup.customer_name || 'N/A'}</Text>
             </View>
           </View>
 
@@ -70,7 +71,7 @@ export default function PickupDetailsScreen({ navigation, route }) {
             </View>
             <View>
               <Text style={styles.label}>Phone Number</Text>
-              <Text style={styles.link}>{pickup.customerPhone}</Text>
+              <Text style={styles.link}>{pickup.customer_phone || pickup.alternate_number || 'N/A'}</Text>
             </View>
           </View>
 
@@ -80,7 +81,18 @@ export default function PickupDetailsScreen({ navigation, route }) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Pickup Address</Text>
-              <Text style={styles.value}>{pickup.address}</Text>
+              <Text style={styles.value}>
+                {[
+                  pickup.house_no,
+                  pickup.address,
+                  pickup.area,
+                  pickup.pincode,
+                  pickup.city
+                ].filter(Boolean).join(', ') || 'N/A'}
+              </Text>
+              {pickup.landmark && (
+                <Text style={[styles.label, { marginTop: 4 }]}>Landmark: {pickup.landmark}</Text>
+              )}
             </View>
           </View>
         </View>
@@ -101,7 +113,9 @@ export default function PickupDetailsScreen({ navigation, route }) {
             <Calendar size={18} color="#2563EB" />
             <View>
               <Text style={styles.label}>Date</Text>
-              <Text style={styles.value}>{pickup.pickupDate}</Text>
+              <Text style={styles.value}>
+                {pickup.pickupDate || (pickup.created_at ? new Date(pickup.created_at).toLocaleDateString() : 'N/A')}
+              </Text>
             </View>
           </View>
 
@@ -109,7 +123,7 @@ export default function PickupDetailsScreen({ navigation, route }) {
             <Clock size={18} color="#2563EB" />
             <View>
               <Text style={styles.label}>Time Slot</Text>
-              <Text style={styles.value}>{pickup.timeSlot}</Text>
+              <Text style={styles.value}>{pickup.time_slot || pickup.timeSlot || 'N/A'}</Text>
             </View>
           </View>
         </View>
