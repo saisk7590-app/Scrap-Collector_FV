@@ -1,16 +1,11 @@
 -- ============================================
--- SCRAP COLLECTOR — DATABASE SCHEMA
--- Run this in your PostgreSQL (scrap_collector DB)
+-- SCRAP COLLECTOR — DATABASE SCHEMA (REFACTORED)
+-- Integer IDs version
 -- ============================================
 
--- Enable UUID generation
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
--- =====================
--- 1. USERS (Auth)
--- =====================
-CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+-- 1. USERS
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   reset_token VARCHAR(255),
@@ -18,32 +13,36 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- =====================
--- 2. PROFILES
--- =====================
-CREATE TABLE IF NOT EXISTS profiles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+-- 2. ROLES
+CREATE TABLE roles (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(50) UNIQUE NOT NULL,
+  display_name VARCHAR(100) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. PROFILES
+CREATE TABLE profiles (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role_id INTEGER NOT NULL DEFAULT 1 REFERENCES roles(id),
   full_name VARCHAR(255) NOT NULL,
   phone VARCHAR(20),
-  role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('customer', 'collector', 'admin')),
+  alternate_phone VARCHAR(20),
   wallet_balance DECIMAL(10,2) DEFAULT 0.00,
   address TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index for fast user_id lookups
-CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON profiles(user_id);
-CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+CREATE INDEX idx_profiles_user_id ON profiles(user_id);
+CREATE INDEX idx_profiles_role_id ON profiles(role_id);
 
--- =====================
--- 3. PICKUPS
--- =====================
-CREATE TABLE IF NOT EXISTS pickups (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+-- 4. PICKUPS
+CREATE TABLE pickups (
+  id SERIAL PRIMARY KEY,
   pickup_no SERIAL,
-  user_id UUID NOT NULL REFERENCES users(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
   items JSONB,
   total_qty INTEGER DEFAULT 0,
   total_weight DECIMAL(10,2) DEFAULT 0.00,
@@ -52,23 +51,15 @@ CREATE TABLE IF NOT EXISTS pickups (
   city VARCHAR(100) DEFAULT 'Hyderabad',
   status VARCHAR(20) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'in_progress', 'completed', 'cancelled')),
   amount DECIMAL(10,2) DEFAULT 0.00,
-  collector_id UUID REFERENCES users(id),
+  collector_id INTEGER REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Indexes for common queries
-CREATE INDEX IF NOT EXISTS idx_pickups_user_id ON pickups(user_id);
-CREATE INDEX IF NOT EXISTS idx_pickups_status ON pickups(status);
-CREATE INDEX IF NOT EXISTS idx_pickups_created_at ON pickups(created_at);
-CREATE INDEX IF NOT EXISTS idx_pickups_collector_id ON pickups(collector_id);
-
--- =====================
--- 4. SCRAP REQUESTS
--- =====================
-CREATE TABLE IF NOT EXISTS scrap_requests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id),
+-- 5. SCRAP REQUESTS
+CREATE TABLE scrap_requests (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
   items JSONB,
   total_weight DECIMAL(10,2) DEFAULT 0.00,
   status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'approved', 'rejected')),
@@ -76,13 +67,9 @@ CREATE TABLE IF NOT EXISTS scrap_requests (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_scrap_requests_user_id ON scrap_requests(user_id);
-
--- =====================
--- 5. SCRAP CATEGORIES
--- =====================
-CREATE TABLE IF NOT EXISTS scrap_categories (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+-- 6. SCRAP CATEGORIES
+CREATE TABLE scrap_categories (
+  id SERIAL PRIMARY KEY,
   name VARCHAR(100) UNIQUE NOT NULL,
   icon_name VARCHAR(50) NOT NULL,
   icon_bg VARCHAR(20) NOT NULL,
@@ -91,12 +78,10 @@ CREATE TABLE IF NOT EXISTS scrap_categories (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- =====================
--- 6. SCRAP ITEMS
--- =====================
-CREATE TABLE IF NOT EXISTS scrap_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  category_id UUID NOT NULL REFERENCES scrap_categories(id) ON DELETE CASCADE,
+-- 7. SCRAP ITEMS
+CREATE TABLE scrap_items (
+  id SERIAL PRIMARY KEY,
+  category_id INTEGER NOT NULL REFERENCES scrap_categories(id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
   measurement_type VARCHAR(20) NOT NULL CHECK (measurement_type IN ('weight', 'quantity')),
   base_price DECIMAL(10,2) DEFAULT 0.00,
@@ -105,26 +90,20 @@ CREATE TABLE IF NOT EXISTS scrap_items (
   UNIQUE(category_id, name)
 );
 
-CREATE INDEX IF NOT EXISTS idx_scrap_items_category_id ON scrap_items(category_id);
-
--- =====================
--- 7. TIME SLOTS
--- =====================
-CREATE TABLE IF NOT EXISTS time_slots (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+-- 8. TIME SLOTS
+CREATE TABLE time_slots (
+  id SERIAL PRIMARY KEY,
   slot_text VARCHAR(100) UNIQUE NOT NULL,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- =====================
--- 8. USER ADDRESSES
--- =====================
-CREATE TABLE IF NOT EXISTS user_addresses (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  type VARCHAR(20) DEFAULT 'Home', -- Home, Office, Other
+-- 9. USER ADDRESSES
+CREATE TABLE user_addresses (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type VARCHAR(20) DEFAULT 'Home',
   house_no VARCHAR(100),
   area VARCHAR(100),
   pincode VARCHAR(10),
@@ -134,13 +113,3 @@ CREATE TABLE IF NOT EXISTS user_addresses (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
--- Index for fast user_id lookups
-CREATE INDEX IF NOT EXISTS idx_user_addresses_user_id ON user_addresses(user_id);
-
--- =====================
--- DONE ✅
--- =====================
--- After running this, start the backend:
---   cd backend
---   npm run dev

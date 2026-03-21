@@ -12,10 +12,15 @@ const JWT_EXPIRES_IN = '7d';
 ======================= */
 exports.register = async (req, res, next) => {
     try {
-        const { email, password, fullName, phone, role } = req.body;
+        let { email, password, fullName, phone, role } = req.body;
 
-        if (!email || !password || !fullName || !phone) {
-            return ApiResponse.error(res, "All fields are required", 400);
+        if ((!email && !phone) || !password || !fullName) {
+            return ApiResponse.error(res, "Full name, Password, and either Email or Phone are required", 400);
+        }
+
+        // If email is missing, generate a dummy one from phone
+        if (!email && phone) {
+            email = `${phone}@scrapcollector.in`;
         }
 
         // Check if user already exists
@@ -25,7 +30,7 @@ exports.register = async (req, res, next) => {
         );
 
         if (existingUser.rows.length > 0) {
-            return ApiResponse.error(res, "User already exists with this email", 409);
+            return ApiResponse.error(res, "User already exists with this identifier", 409);
         }
 
         // Hash password
@@ -40,18 +45,27 @@ exports.register = async (req, res, next) => {
 
         const user = userResult.rows[0];
 
+        // Fetch role_id from roles table
+        const userRoleName = role || 'customer';
+        const roleResult = await pool.query('SELECT id FROM roles WHERE name = $1', [userRoleName.toLowerCase()]);
+        
+        if (roleResult.rows.length === 0) {
+            return ApiResponse.error(res, "Invalid role", 400);
+        }
+        
+        const roleId = roleResult.rows[0].id;
+
         // Insert profile
-        const userRole = role || 'customer';
         const profileResult = await pool.query(
-            'INSERT INTO profiles (user_id, full_name, phone, role) VALUES ($1, $2, $3, $4) RETURNING *',
-            [user.id, fullName, phone, userRole]
+            'INSERT INTO profiles (user_id, full_name, phone, role_id) VALUES ($1, $2, $3, $4) RETURNING *',
+            [user.id, fullName, phone, roleId]
         );
 
         const profile = profileResult.rows[0];
 
         // Generate JWT
         const token = jwt.sign(
-            { id: user.id, email: user.email, role: userRole },
+            { id: user.id, email: user.email, role: userRoleName },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
         );
@@ -63,7 +77,7 @@ exports.register = async (req, res, next) => {
                 email: user.email,
                 fullName: profile.full_name,
                 phone: profile.phone,
-                role: profile.role,
+                role: userRoleName,
                 walletBalance: profile.wallet_balance,
             }
         }, 201);
@@ -78,20 +92,26 @@ exports.register = async (req, res, next) => {
 ======================= */
 exports.login = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
+        const { email, phone, password } = req.body;
 
-        if (!email || !password) {
-            return ApiResponse.error(res, "Email and password are required", 400);
+        if ((!email && !phone) || !password) {
+            return ApiResponse.error(res, "Email/Phone and password are required", 400);
         }
 
-        // Find user
+        const identifier = (email || phone).toLowerCase();
+
+        // Find user & profile with role join
         const userResult = await pool.query(
-            'SELECT * FROM users WHERE email = $1',
-            [email.toLowerCase()]
+            `SELECT u.*, p.full_name, p.phone, p.wallet_balance, r.name as role_name
+             FROM users u
+             JOIN profiles p ON u.id = p.user_id
+             JOIN roles r ON p.role_id = r.id
+             WHERE u.email = $1 OR p.phone = $1`,
+            [identifier]
         );
 
         if (userResult.rows.length === 0) {
-            return ApiResponse.error(res, "Invalid email or password", 401);
+            return ApiResponse.error(res, "Invalid credentials", 401);
         }
 
         const user = userResult.rows[0];
@@ -99,24 +119,12 @@ exports.login = async (req, res, next) => {
         // Compare password
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
-            return ApiResponse.error(res, "Invalid email or password", 401);
-        }
-
-        // Get profile
-        const profileResult = await pool.query(
-            'SELECT * FROM profiles WHERE user_id = $1',
-            [user.id]
-        );
-
-        const profile = profileResult.rows[0];
-
-        if (!profile) {
-            return ApiResponse.error(res, "User profile not found", 404);
+            return ApiResponse.error(res, "Invalid credentials", 401);
         }
 
         // Generate JWT
         const token = jwt.sign(
-            { id: user.id, email: user.email, role: profile.role },
+            { id: user.id, email: user.email, role: user.role_name },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
         );
@@ -126,10 +134,10 @@ exports.login = async (req, res, next) => {
             user: {
                 id: user.id,
                 email: user.email,
-                fullName: profile.full_name,
-                phone: profile.phone,
-                role: profile.role,
-                walletBalance: profile.wallet_balance,
+                fullName: user.full_name,
+                phone: user.phone,
+                role: user.role_name,
+                walletBalance: user.wallet_balance,
             }
         });
 

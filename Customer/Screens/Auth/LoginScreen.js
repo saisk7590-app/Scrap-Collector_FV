@@ -34,10 +34,8 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      const email = `${mobile}@scrapcollector.in`;
-
       const data = await apiRequest("/auth/login", "POST", {
-        email,
+        phone: mobile,
         password,
       });
 

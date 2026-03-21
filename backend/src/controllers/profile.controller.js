@@ -9,7 +9,10 @@ exports.getProfile = async (req, res, next) => {
         const userId = req.user.id;
 
         const result = await pool.query(
-            'SELECT * FROM profiles WHERE user_id = $1',
+            `SELECT p.*, r.name as role_name
+             FROM profiles p
+             JOIN roles r ON p.role_id = r.id
+             WHERE p.user_id = $1`,
             [userId]
         );
 
@@ -25,7 +28,7 @@ exports.getProfile = async (req, res, next) => {
                 userId: profile.user_id,
                 fullName: profile.full_name,
                 phone: profile.phone,
-                role: profile.role,
+                role: profile.role_name,
                 walletBalance: profile.wallet_balance,
                 address: profile.address,
                 createdAt: profile.created_at,
@@ -50,7 +53,7 @@ exports.updateProfile = async (req, res, next) => {
             return res.status(400).json({ message: "At least one field is required" });
         }
 
-        // Build dynamic update
+        // Build dynamic update (profiles table)
         const fields = [];
         const values = [];
         let paramIndex = 1;
@@ -83,13 +86,17 @@ exports.updateProfile = async (req, res, next) => {
 
         const profile = result.rows[0];
 
+        // Fetch role name for response
+        const roleResult = await pool.query('SELECT name FROM roles WHERE id = $1', [profile.role_id]);
+        const roleName = roleResult.rows[0]?.name || 'unknown';
+
         return ApiResponse.success(res, "Profile updated", {
             profile: {
                 id: profile.id,
                 userId: profile.user_id,
                 fullName: profile.full_name,
                 phone: profile.phone,
-                role: profile.role,
+                role: roleName,
                 walletBalance: profile.wallet_balance,
                 address: profile.address,
             }

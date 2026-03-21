@@ -45,13 +45,10 @@ export default function SignUpScreen() {
     setLoading(true);
 
     try {
-      const email = `${mobile}@scrapcollector.in`;
-
       const data = await apiRequest("/auth/register", "POST", {
-        email,
-        password,
         fullName,
         phone: mobile,
+        password,
         role: selectedRole,
       });
 
