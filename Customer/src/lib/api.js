@@ -9,7 +9,7 @@ import { Platform } from "react-native";
 // "ngrok"       → Phone & PC on DIFFERENT networks (ngrok tunnel)
 // "local"       → Phone & PC on SAME WiFi network
 // "production"  → Deployed cloud backend
-const ENV = "ngrok"; // 👈 CHANGE THIS AS NEEDED
+const ENV = "ngrok"; // 👈 use ngrok when phone is on mobile data
 
 const ENVIRONMENTS = {
     ngrok: {
@@ -23,7 +23,7 @@ const ENVIRONMENTS = {
                 ? "http://localhost:5000/api"
                 : Platform.OS === "android"
                     ? "http://10.0.2.2:5000/api"   // Android emulator
-                    : "http://192.168.1.100:5000/api", // Physical device — update IP
+                    : "http://192.168.14.172:5000/api", // Physical device — update IP
     },
     production: {
         // Your deployed backend URL

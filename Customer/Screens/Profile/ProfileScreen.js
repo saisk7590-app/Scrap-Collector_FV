@@ -11,6 +11,7 @@ import CustomButton from "../../components/CustomButton";
 import { getStoredUser } from "../../src/lib/api";
 import { COLORS, SPACING, ROUTES } from "../../constants";
 import { useAuth } from "../../context/AuthContext";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function ProfileScreen({ navigation }) {
   const { signOut } = useAuth();
@@ -19,6 +20,13 @@ export default function ProfileScreen({ navigation }) {
   React.useEffect(() => {
     loadUser();
   }, []);
+
+  // refresh when coming back to this screen
+  useFocusEffect(
+    React.useCallback(() => {
+      loadUser();
+    }, [])
+  );
 
   const loadUser = async () => {
     try {

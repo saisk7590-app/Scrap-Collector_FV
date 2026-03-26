@@ -1,0 +1,328 @@
+/* ================= LAYOUT ================= */
+
+.layout {
+  display: flex;
+  height: 100vh;
+  font-family: "Segoe UI", sans-serif;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+/* ================= SIDEBAR ================= */
+
+.sidebar {
+  width: 280px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.sidebar-top {
+  padding: 24px 20px 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.logo {
+  color: #16a34a;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Navigation */
+.sidebar nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar a {
+  text-decoration: none;
+  color: #374151;
+  padding: 10px 14px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.sidebar a:hover {
+  background: #f3f4f6;
+}
+
+.sidebar a.active {
+  background: #dcfce7;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* Logout */
+.logout-wrapper {
+  padding: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #ef4444;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+
+.logout-btn:hover {
+  background: #dc2626;
+}
+
+/* ================= MAIN AREA ================= */
+
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ================= TOPBAR ================= */
+
+.topbar {
+  background: white;
+  padding: 16px 28px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Search Wrapper */
+.search-wrapper {
+  position: relative;
+  width: 300px;
+}
+
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.search {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  outline: none;
+  transition: 0.2s;
+}
+
+.search:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+}
+
+/* ================= ADMIN INFO ================= */
+
+.admin-info {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Notification */
+.notification {
+  position: relative;
+  cursor: pointer;
+  font-size: 18px;
+  color: #4b5563;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 50px;
+}
+
+/* Avatar */
+.avatar {
+  background: #16a34a;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.admin-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-name {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.admin-email {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ================= CONTENT ================= */
+
+.content {
+  padding: 30px;
+  flex: 1;
+  overflow-y: auto;
+  background: #f8fafc;
+}
+/* Sidebar nav item with icon */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #374151;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.nav-item:hover {
+  background: #f3f4f6;
+}
+
+.nav-item.active {
+  background: #dcfce7;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* Logo row */
+.logo-row {
+  position: relative;
+  cursor: pointer;
+  font-size: 18px;
+  color: #4b5563;
+}
+.topbar-icon {
+  position: absolute;
+  top: 20px;
+  right: 260px;
+  background: #4e9be2;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 50px;
+}
+
+.topbar-icon:hover {
+  opacity: 0.7;
+}
+.topbar {
+  display: flex;
+  justify-content: flex-end; /* push everything to right */
+  align-items: center;
+  padding: 12px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Right section */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Settings icon */
+.topbar-icon {
+  cursor: pointer;
+  color: #4b5563;
+}
+
+/* Notification */
+.notification {
+  position: relative;
+  cursor: pointer;
+  color: #4b5563;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 50%;
+}
+
+/* Admin info */
+.admin-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Avatar */
+.avatar {
+  width: 35px;
+  height: 35px;
+  background: #6366f1;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 600;
+}
+
+/* Name + email */
+.admin-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-email {
+  font-size: 12px;
+  color: #6b7280;
+}

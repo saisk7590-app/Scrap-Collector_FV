@@ -21,23 +21,28 @@ export default function PickupActionScreen({ navigation, route }) {
     );
   }
 
-  // ✅ Parse items from pickup data
+  // ===== INITIAL ITEMS =====
   const initialItems = React.useMemo(() => {
-    const list = Array.isArray(pickup.items) ? pickup.items : (
-      typeof pickup.items === 'string' ? JSON.parse(pickup.items) : []
-    );
-    // Map to the format needed by the screen
-    return list.map(item => ({
+    const list = Array.isArray(pickup.items)
+      ? pickup.items
+      : typeof pickup.items === "string"
+      ? JSON.parse(pickup.items)
+      : [];
+
+    return list.map((item) => ({
       category: item.name,
       price: item.price || 0,
       expectedWeight: item.weight || item.quantity || 0,
       actualWeight: item.weight || item.quantity || 0,
-      pricingType: item.type || (item.weight > 0 ? 'weight' : 'quantity')
+      pricingType:
+        item.type || (item.weight > 0 ? "weight" : "quantity"),
     }));
   }, [pickup]);
 
   const [items, setItems] = useState(initialItems);
+  const [remarks, setRemarks] = useState("");
 
+  // ===== UPDATE FUNCTIONS =====
   const updateWeight = (index, change) => {
     const updated = [...items];
     updated[index].actualWeight = Math.max(
@@ -53,6 +58,26 @@ export default function PickupActionScreen({ navigation, route }) {
     setItems(updated);
   };
 
+  const updateCategory = (index, value) => {
+    const updated = [...items];
+    updated[index].category = value;
+    setItems(updated);
+  };
+
+  const addItem = () => {
+    setItems([
+      ...items,
+      {
+        category: "New Item",
+        price: 0,
+        expectedWeight: 0,
+        actualWeight: 0,
+        pricingType: "weight",
+      },
+    ]);
+  };
+
+  // ===== TOTALS =====
   const customerTotal = items.reduce(
     (sum, i) => sum + i.expectedWeight * i.price,
     0
@@ -75,26 +100,73 @@ export default function PickupActionScreen({ navigation, route }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* CUSTOMER INFO */}
+        {/* CUSTOMER */}
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>Customer</Text>
-          <Text style={styles.infoValue}>{pickup.customerName}</Text>
+          <Text style={styles.infoValue}>
+            {pickup.customerName}
+          </Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Scrap Details</Text>
+        {/* ✅ REMARKS */}
+        <View style={styles.remarksCard}>
+          <Text style={styles.infoLabel}>
+            Remarks (Optional)
+          </Text>
+          <TextInput
+            style={styles.remarksInput}
+            placeholder="Add notes (mixed scrap, damage, etc.)"
+            value={remarks}
+            onChangeText={setRemarks}
+            multiline
+          />
+        </View>
 
+        {/* HEADER + ADD ITEM */}
+        <View style={styles.addItemRow}>
+          <Text style={styles.sectionTitle}>
+            Scrap Details
+          </Text>
+
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={addItem}
+          >
+            <Plus size={16} color="#fff" />
+            <Text style={styles.addBtnText}>Add Item</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ITEMS */}
         {items.map((item, index) => (
           <View key={index} style={styles.card}>
-            <Text style={styles.itemTitle}>{item.category}</Text>
-            <Text style={styles.price}>₹{item.price} / {item.pricingType === 'weight' ? 'kg' : 'unit'}</Text>
+            {/* CATEGORY EDIT */}
+            <TextInput
+              style={styles.categoryInput}
+              value={item.category}
+              onChangeText={(text) =>
+                updateCategory(index, text)
+              }
+            />
 
-            {/* SIDE BY SIDE */}
+            <Text style={styles.price}>
+              ₹{item.price} /{" "}
+              {item.pricingType === "weight"
+                ? "kg"
+                : "unit"}
+            </Text>
+
             <View style={styles.compareRow}>
               {/* CUSTOMER */}
               <View style={styles.box}>
-                <Text style={styles.boxLabel}>Customer Given</Text>
+                <Text style={styles.boxLabel}>
+                  Customer Given
+                </Text>
                 <Text style={styles.boxValue}>
-                  {item.expectedWeight} {item.pricingType === 'weight' ? 'kg' : 'unit'}
+                  {item.expectedWeight}{" "}
+                  {item.pricingType === "weight"
+                    ? "kg"
+                    : "unit"}
                 </Text>
                 <Text style={styles.boxAmount}>
                   ₹{item.expectedWeight * item.price}
@@ -110,7 +182,14 @@ export default function PickupActionScreen({ navigation, route }) {
                 <View style={styles.row}>
                   <TouchableOpacity
                     style={styles.controlBtn}
-                    onPress={() => updateWeight(index, item.pricingType === 'weight' ? -0.5 : -1)}
+                    onPress={() =>
+                      updateWeight(
+                        index,
+                        item.pricingType === "weight"
+                          ? -0.5
+                          : -1
+                      )
+                    }
                   >
                     <Minus size={16} />
                   </TouchableOpacity>
@@ -118,13 +197,22 @@ export default function PickupActionScreen({ navigation, route }) {
                   <TextInput
                     style={styles.input}
                     value={item.actualWeight.toString()}
-                    onChangeText={(v) => setWeight(index, v)}
+                    onChangeText={(v) =>
+                      setWeight(index, v)
+                    }
                     keyboardType="numeric"
                   />
 
                   <TouchableOpacity
                     style={styles.controlBtnPrimary}
-                    onPress={() => updateWeight(index, item.pricingType === 'weight' ? 0.5 : 1)}
+                    onPress={() =>
+                      updateWeight(
+                        index,
+                        item.pricingType === "weight"
+                          ? 0.5
+                          : 1
+                      )
+                    }
                   >
                     <Plus size={16} color="#fff" />
                   </TouchableOpacity>
@@ -133,8 +221,12 @@ export default function PickupActionScreen({ navigation, route }) {
                 <Text style={styles.boxAmount}>
                   ₹{item.actualWeight * item.price}
                 </Text>
-                <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>
-                  Unit: {item.pricingType === 'weight' ? 'kg' : 'unit'}
+
+                <Text style={styles.unitText}>
+                  Unit:{" "}
+                  {item.pricingType === "weight"
+                    ? "kg"
+                    : "unit"}
                 </Text>
               </View>
             </View>
@@ -143,39 +235,56 @@ export default function PickupActionScreen({ navigation, route }) {
 
         {/* TOTALS */}
         <View style={styles.totalCard}>
-          <Text style={styles.totalLabel}>Customer Expected Total</Text>
-          <Text style={styles.totalValue}>₹{customerTotal}</Text>
+          <Text style={styles.totalLabel}>
+            Customer Expected Total
+          </Text>
+          <Text style={styles.totalValue}>
+            ₹{customerTotal}
+          </Text>
         </View>
 
         <View style={styles.totalCard}>
-          <Text style={styles.totalLabel}>Collector Calculated Total</Text>
-          <Text style={styles.totalValue}>₹{collectorTotal}</Text>
+          <Text style={styles.totalLabel}>
+            Collector Calculated Total
+          </Text>
+          <Text style={styles.totalValue}>
+            ₹{collectorTotal}
+          </Text>
         </View>
 
-        {/* FINAL SUMMARY (UNCHANGED) */}
+        {/* FINAL */}
         <View style={styles.summary}>
-          <Text style={styles.summaryText}>Final Amount</Text>
-          <Text style={styles.summaryAmount}>₹{collectorTotal}</Text>
+          <Text style={styles.summaryText}>
+            Final Amount
+          </Text>
+          <Text style={styles.summaryAmount}>
+            ₹{collectorTotal}
+          </Text>
         </View>
       </ScrollView>
 
-      {/* BOTTOM ACTION */}
+      {/* BUTTON */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={[
             styles.generateBtn,
-            collectorTotal === 0 && { backgroundColor: "#9ca3af" },
+            collectorTotal === 0 && {
+              backgroundColor: "#9ca3af",
+            },
           ]}
           disabled={collectorTotal === 0}
           onPress={() =>
             navigation.navigate("Invoice", {
               pickup,
               items,
+              remarks, // ✅ pass remarks
               totalAmount: collectorTotal,
             })
           }
         >
-          <Text style={styles.generateText}>Generate Invoice</Text>
+          <Text style={styles.generateText}>
+            Generate Invoice
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -200,7 +309,11 @@ const styles = StyleSheet.create({
 
   headerTitle: { fontSize: 16, fontWeight: "700" },
 
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   infoCard: {
     backgroundColor: "#fff",
@@ -209,13 +322,52 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
+  remarksCard: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 16,
+  },
+
+  remarksInput: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 10,
+    padding: 10,
+    minHeight: 60,
+    textAlignVertical: "top",
+  },
+
   infoLabel: { color: "#6b7280", fontSize: 12 },
   infoValue: { fontSize: 16, fontWeight: "600" },
 
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
+  },
+
+  addItemRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
+  },
+
+  addBtn: {
+    flexDirection: "row",
+    backgroundColor: "#2563eb",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+
+  addBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    marginLeft: 4,
+    fontWeight: "600",
   },
 
   card: {
@@ -225,7 +377,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  itemTitle: { fontSize: 16, fontWeight: "600" },
+  categoryInput: {
+    borderBottomWidth: 1,
+    borderColor: "#d1d5db",
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+
   price: { color: "#6b7280", marginBottom: 10 },
 
   compareRow: {
@@ -243,7 +402,12 @@ const styles = StyleSheet.create({
   boxLabel: { fontSize: 12, color: "#6b7280" },
   boxLabelCollector: { fontSize: 12, color: "#2563eb" },
 
-  boxValue: { fontSize: 16, fontWeight: "600", marginVertical: 4 },
+  boxValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginVertical: 4,
+  },
+
   boxAmount: { fontWeight: "600" },
 
   row: {
@@ -280,6 +444,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
+  unitText: {
+    fontSize: 10,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+
   totalCard: {
     backgroundColor: "#fff",
     padding: 16,
@@ -298,7 +468,10 @@ const styles = StyleSheet.create({
   },
 
   summaryText: { color: "#6b7280" },
-  summaryAmount: { fontSize: 20, fontWeight: "700" },
+  summaryAmount: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
 
   bottomBar: {
     position: "absolute",
@@ -319,5 +492,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  generateText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  generateText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });

@@ -1,0 +1,80 @@
+.settings-page {
+  padding: 40px;
+  max-width: 900px;
+  margin: auto;
+}
+
+.page-header {
+  margin-bottom: 30px;
+}
+
+.settings-card {
+  background: white;
+  padding: 28px;
+  border-radius: 16px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.05);
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-card h3 {
+  margin-bottom: 10px;
+}
+
+.settings-card input[type="text"],
+.settings-card input[type="email"],
+.settings-card input[type="number"] {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+}
+
+.area-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.area-badge {
+  background: #dcfce7;
+  color: #166534;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.primary-btn {
+  background: #03C75A;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.primary-btn:hover {
+  background: #02a64b;
+}
+
+.save-btn {
+  background: #03C75A;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 500;
+  width: 100%;
+}
+
+.save-btn:hover {
+  background: #029e48;
+}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,9 +12,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import Header from "../../components/Header";
 import { COLORS, SPACING, RADIUS } from "../../constants";
+import { apiRequest } from "../../src/lib/api";
 
 export default function WalletScreen() {
-  const [walletBalance, setWalletBalance] = useState(1500);
+  const [walletBalance, setWalletBalance] = useState(0);
 
   const [transactions, setTransactions] = useState([
     { type: "credit", title: "Scrap Pickup", date: "Dec 15", amount: 500 },
@@ -23,6 +24,20 @@ export default function WalletScreen() {
 
   const [showWithdrawInput, setShowWithdrawInput] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
+
+  useEffect(() => {
+    const loadBalance = async () => {
+      try {
+        const data = await apiRequest("/profile");
+        if (data.profile?.walletBalance != null) {
+          setWalletBalance(Number(data.profile.walletBalance));
+        }
+      } catch (e) {
+        console.log("Wallet fetch failed:", e?.message || e);
+      }
+    };
+    loadBalance();
+  }, []);
 
   const handleWithdraw = () => {
     const amount = Number(withdrawAmount);

@@ -1,0 +1,32 @@
+.coming-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.coming-card {
+  background: white;
+  padding: 60px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  max-width: 500px;
+}
+
+.coming-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.coming-subtitle {
+  font-size: 16px;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.coming-note {
+  font-size: 13px;
+  color: #999;
+}

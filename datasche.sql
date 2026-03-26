@@ -113,3 +113,92 @@ CREATE TABLE user_addresses (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 10. CUSTOMERS
+CREATE TABLE customers (
+  id SERIAL PRIMARY KEY,
+  user_id INT UNIQUE NOT NULL,
+  profile_id INT,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT fk_customer_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+  CONSTRAINT fk_customer_profile
+    FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE SET NULL
+);
+
+-- 11. COLLECTORS
+CREATE TABLE collectors (
+  id SERIAL PRIMARY KEY,
+  user_id INT UNIQUE NOT NULL,
+  profile_id INT,
+
+  vehicle_number VARCHAR(50),
+  license_number VARCHAR(100),
+  is_verified BOOLEAN DEFAULT FALSE,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT fk_collector_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+  CONSTRAINT fk_collector_profile
+    FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE SET NULL
+);
+
+--12. CORPORATES
+CREATE TABLE corporates (
+  id SERIAL PRIMARY KEY,
+  user_id INT UNIQUE NOT NULL,
+
+  company_name VARCHAR(150) NOT NULL,
+  contact_person VARCHAR(100),
+  contact_phone VARCHAR(20),
+  company_email VARCHAR(150),
+
+  address TEXT,
+  gst_number VARCHAR(50),
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT fk_corporate_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+--13. GOVERNMENT SECTORS
+CREATE TABLE government_sectors (
+  id SERIAL PRIMARY KEY,
+  user_id INT UNIQUE NOT NULL,
+
+  department_name VARCHAR(150) NOT NULL,
+  officer_name VARCHAR(100),
+  contact_number VARCHAR(20),
+
+  zone VARCHAR(100),
+  address TEXT,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT fk_government_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+--14. GATED COMMUNITIES
+CREATE TABLE gated_communities (
+  id SERIAL PRIMARY KEY,
+  user_id INT UNIQUE NOT NULL,
+
+  community_name VARCHAR(150) NOT NULL,
+  manager_name VARCHAR(100),
+  manager_phone VARCHAR(20),
+
+  total_units INT,
+  address TEXT,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT fk_gated_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { User, Phone, MapPin } from "lucide-react-native";
 import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import Header from "../../components/Header";
 import { COLORS } from "../../constants/colors";
@@ -52,11 +53,15 @@ export default function EditProfileScreen({ navigation }) {
     
     setSaving(true);
     try {
-      await apiRequest("/profile/update", "PUT", {
+      const res = await apiRequest("/profile", "PUT", {
         fullName: name,
         phone: mobile,
         address: address,
       });
+      // persist updated user locally so other screens show latest immediately
+      if (res.profile) {
+        await AsyncStorage.setItem("userData", JSON.stringify(res.profile));
+      }
       Toast.show({
         type: "success",
         text1: "Success",

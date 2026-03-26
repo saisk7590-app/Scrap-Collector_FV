@@ -82,6 +82,9 @@ function NavigationWrapper() {
             <Stack.Screen name="PickupHistory" component={PickupHistoryScreen} />
             <Stack.Screen name="Invoice" component={InvoiceScreen} />
             <Stack.Screen name="CollectorProfile" component={CollectorProfileScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="ComingSoon" component={ComingSoonScreen} />
           </>
 
         ) : (

@@ -6,34 +6,56 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Recycle, Truck, ShoppingBag } from "lucide-react-native";
+import { Recycle } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
+import { Picker } from "@react-native-picker/picker";
 
 import CustomInput from "../../components/CustomInput";
 import CustomButton from "../../components/CustomButton";
-import { COLORS, ROUTES, FONTS, SIZES } from "../../constants";
+import { COLORS, ROUTES, FONTS } from "../../constants";
 import { apiRequest } from "../../src/lib/api";
 import { useAuth } from "../../context/AuthContext";
 
 export default function SignUpScreen() {
   const navigation = useNavigation();
+  const { signIn } = useAuth();
 
+  // ===== COMMON STATES =====
   const [fullName, setFullName] = useState("");
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
   const [loading, setLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("customer"); // 'customer' or 'collector'
 
-  const { signIn } = useAuth();
+  // ===== ROLE BASED STATES =====
+  const [companyName, setCompanyName] = useState("");
+  const [gstNumber, setGstNumber] = useState("");
+  const [officeAddress, setOfficeAddress] = useState("");
 
+  const [departmentName, setDepartmentName] = useState("");
+  const [officeLocation, setOfficeLocation] = useState("");
+
+  const [communityName, setCommunityName] = useState("");
+  const [areaAddress, setAreaAddress] = useState("");
+
+  // ===== ROLES =====
+  const ROLES = [
+    { label: "Customer", value: "customer" },
+    { label: "Collector", value: "collector" },
+    { label: "Corporate", value: "corporate" },
+    { label: "Government Sector", value: "government" },
+    { label: "Gated Community", value: "community" },
+  ];
+
+  // ===== SIGNUP HANDLER =====
   const handleSignUp = async () => {
     if (loading) return;
 
-    if (!fullName || !mobile || !password) {
-      Alert.alert("Error", "Please fill all fields");
+    // Basic validation
+    if (!fullName || !mobile || !password || !selectedRole) {
+      Alert.alert("Error", "Please fill all required fields");
       return;
     }
 
@@ -42,23 +64,54 @@ export default function SignUpScreen() {
       return;
     }
 
+    // Role-specific validation
+    if (selectedRole === "corporate" && (!companyName || !gstNumber)) {
+      Alert.alert("Error", "Please fill corporate details");
+      return;
+    }
+
+    if (selectedRole === "government" && !departmentName) {
+      Alert.alert("Error", "Please fill department details");
+      return;
+    }
+
+    if (selectedRole === "community" && !communityName) {
+      Alert.alert("Error", "Please fill community details");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const data = await apiRequest("/auth/register", "POST", {
+      // ===== BUILD PAYLOAD =====
+      const payload = {
         fullName,
         phone: mobile,
         password,
         role: selectedRole,
-      });
+      };
 
-      // Pass token + user data to context
+      if (selectedRole === "corporate") {
+        payload.companyName = companyName;
+        payload.gstNumber = gstNumber;
+        payload.officeAddress = officeAddress;
+      }
+
+      if (selectedRole === "government") {
+        payload.departmentName = departmentName;
+        payload.officeLocation = officeLocation;
+      }
+
+      if (selectedRole === "community") {
+        payload.communityName = communityName;
+        payload.areaAddress = areaAddress;
+      }
+
+      const data = await apiRequest("/auth/register", "POST", payload);
+
       await signIn(data.token, data.user);
 
       Alert.alert("Success", "Account created successfully!");
-
-      // No need to navigate manually, App.js will rerender!
-
     } catch (err) {
       Alert.alert("Error", err.message || "Something went wrong");
     } finally {
@@ -67,72 +120,38 @@ export default function SignUpScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        selectedRole === "collector" && styles.safeAreaCollector,
-      ]}
-    >
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.card}>
-          <Recycle
-            size={60}
-            color={selectedRole === "collector" ? COLORS.info : COLORS.primary}
-            style={styles.logo}
-          />
+          <Recycle size={60} color={COLORS.primary} style={styles.logo} />
 
           <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join and start recycling today</Text>
+          <Text style={styles.subtitle}>
+            Join and start recycling today
+          </Text>
 
-          {/* ===== ROLE TOGGLE ===== */}
+          {/* ===== ROLE DROPDOWN ===== */}
           <Text style={styles.roleLabel}>I am a:</Text>
-          <View style={styles.roleToggle}>
-            <TouchableOpacity
-              style={[
-                styles.roleOption,
-                selectedRole === "customer" && styles.roleOptionActive,
-              ]}
-              onPress={() => setSelectedRole("customer")}
+          <View style={styles.dropdown}>
+            <Picker
+              selectedValue={selectedRole}
+              onValueChange={(itemValue) => setSelectedRole(itemValue)}
             >
-              <ShoppingBag
-                size={20}
-                color={selectedRole === "customer" ? "#FFFFFF" : "#6B7280"}
-              />
-              <Text
-                style={[
-                  styles.roleText,
-                  selectedRole === "customer" && styles.roleTextActive,
-                ]}
-              >
-                Customer
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.roleOption,
-                selectedRole === "collector" && styles.roleOptionActiveBlue,
-              ]}
-              onPress={() => setSelectedRole("collector")}
-            >
-              <Truck
-                size={20}
-                color={selectedRole === "collector" ? "#FFFFFF" : "#6B7280"}
-              />
-              <Text
-                style={[
-                  styles.roleText,
-                  selectedRole === "collector" && styles.roleTextActive,
-                ]}
-              >
-                Collector
-              </Text>
-            </TouchableOpacity>
+              <Picker.Item label="Select Role" value="" />
+              {ROLES.map((role) => (
+                <Picker.Item
+                  key={role.value}
+                  label={role.label}
+                  value={role.value}
+                />
+              ))}
+            </Picker>
           </View>
 
+          {/* ===== COMMON FIELDS ===== */}
           <CustomInput
             placeholder="Full Name"
             value={fullName}
@@ -153,22 +172,75 @@ export default function SignUpScreen() {
             onChangeText={setPassword}
           />
 
+          {/* ===== DYNAMIC FIELDS ===== */}
+
+          {/* Corporate */}
+          {selectedRole === "corporate" && (
+            <>
+              <CustomInput
+                placeholder="Company Name"
+                value={companyName}
+                onChangeText={setCompanyName}
+              />
+              <CustomInput
+                placeholder="GST Number"
+                value={gstNumber}
+                onChangeText={setGstNumber}
+              />
+              <CustomInput
+                placeholder="Office Address"
+                value={officeAddress}
+                onChangeText={setOfficeAddress}
+              />
+            </>
+          )}
+
+          {/* Government */}
+          {selectedRole === "government" && (
+            <>
+              <CustomInput
+                placeholder="Department Name"
+                value={departmentName}
+                onChangeText={setDepartmentName}
+              />
+              <CustomInput
+                placeholder="Office Location"
+                value={officeLocation}
+                onChangeText={setOfficeLocation}
+              />
+            </>
+          )}
+
+          {/* Community */}
+          {selectedRole === "community" && (
+            <>
+              <CustomInput
+                placeholder="Community Name"
+                value={communityName}
+                onChangeText={setCommunityName}
+              />
+              <CustomInput
+                placeholder="Area / Address"
+                value={areaAddress}
+                onChangeText={setAreaAddress}
+              />
+            </>
+          )}
+
+          {/* ===== BUTTON ===== */}
           <CustomButton
             title="Sign Up"
             onPress={handleSignUp}
             loading={loading}
-            variant={selectedRole === "collector" ? "info" : "primary"}
           />
 
+          {/* ===== FOOTER ===== */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Already have an account?{" "}
             </Text>
             <Text
-              style={[
-                styles.link,
-                selectedRole === "collector" && styles.linkCollector,
-              ]}
+              style={styles.link}
               onPress={() => navigation.navigate(ROUTES.LOGIN)}
             >
               Login
@@ -180,21 +252,17 @@ export default function SignUpScreen() {
   );
 }
 
+// ===== STYLES =====
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#DCFCE7", // Light green
+    backgroundColor: "#DCFCE7",
   },
-  safeAreaCollector: {
-    backgroundColor: "#EFF6FF", // Light blue
-  },
-
   container: {
     flex: 1,
     justifyContent: "center",
     padding: 20,
   },
-
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
@@ -205,90 +273,47 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     elevation: 8,
   },
-
   logo: {
     alignSelf: "center",
     marginBottom: 15,
   },
-
   title: {
     fontSize: 24,
     fontWeight: "700",
     textAlign: "center",
     color: "#111827",
   },
-
   subtitle: {
     textAlign: "center",
     color: "#6B7280",
     marginBottom: 20,
     fontSize: 15,
   },
-
-  // ===== ROLE TOGGLE =====
   roleLabel: {
     fontSize: 14,
     fontWeight: "600",
     color: "#374151",
     marginBottom: 8,
   },
-
-  roleToggle: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 20,
-  },
-
-  roleOption: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 2,
+  dropdown: {
+    borderWidth: 1,
     borderColor: "#E5E7EB",
+    borderRadius: 12,
+    marginBottom: 20,
     backgroundColor: "#F9FAFB",
   },
-
-  roleOptionActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary,
-  },
-
-  roleOptionActiveBlue: {
-    borderColor: "#2563EB",
-    backgroundColor: "#2563EB",
-  },
-
-  roleText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#6B7280",
-  },
-
-  roleTextActive: {
-    color: "#FFFFFF",
-  },
-
   footer: {
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 20,
   },
-
   footerText: {
     color: COLORS.textSecondary,
     fontSize: FONTS.size.md,
   },
-
   link: {
-    color: COLORS.primary, // Green primary
+    color: COLORS.primary,
     fontSize: FONTS.size.md,
     fontWeight: "bold",
-  },
-  linkCollector: {
-    color: COLORS.info, // Blue info
   },
 });

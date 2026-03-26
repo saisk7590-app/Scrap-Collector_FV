@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  CheckCircle,
   Clock,
   Wallet,
   Menu,
@@ -17,8 +16,9 @@ import {
   History,
 } from "lucide-react-native";
 import { apiRequest, getStoredUser } from "../../src/lib/api";
+import { useFocusEffect } from "@react-navigation/native";
 
-const POLL_INTERVAL = 30000; // 30 seconds
+const POLL_INTERVAL = 30000;
 
 export default function CollectorDashboardScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
@@ -37,7 +37,6 @@ export default function CollectorDashboardScreen({ navigation }) {
     fetchProfile();
     fetchTodayPickups();
 
-    // ✅ POLLING (replaces Supabase realtime)
     pollRef.current = setInterval(() => {
       fetchTodayPickups();
     }, POLL_INTERVAL);
@@ -49,15 +48,22 @@ export default function CollectorDashboardScreen({ navigation }) {
     };
   }, []);
 
-  /* FETCH COLLECTOR NAME */
+  // Refresh when returning to dashboard
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchProfile();
+      fetchTodayPickups();
+    }, [])
+  );
+
+  /* FETCH PROFILE */
   const fetchProfile = async () => {
     try {
       const data = await apiRequest("/profile");
       if (data.profile?.fullName) {
         setCollectorName(data.profile.fullName);
       }
-    } catch (err) {
-      // Fallback to stored data
+    } catch {
       const storedUser = await getStoredUser();
       if (storedUser?.fullName) {
         setCollectorName(storedUser.fullName);
@@ -65,10 +71,9 @@ export default function CollectorDashboardScreen({ navigation }) {
     }
   };
 
-  /* FETCH TODAY PICKUPS */
+  /* FETCH PICKUPS */
   const fetchTodayPickups = async () => {
     setLoading(true);
-
     try {
       const data = await apiRequest("/pickups/today");
       const safeData = data.pickups || [];
@@ -83,10 +88,7 @@ export default function CollectorDashboardScreen({ navigation }) {
 
       const earnings = safeData
         .filter((p) => p.status === "completed")
-        .reduce(
-          (sum, p) => sum + Number(p.amount || 0),
-          0
-        );
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
       setStats({
         todayPickups: safeData.length,
@@ -109,15 +111,12 @@ export default function CollectorDashboardScreen({ navigation }) {
         style={styles.container}
         showsVerticalScrollIndicator={false}
       >
+        {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.welcome}>
-                Welcome Back,
-              </Text>
-              <Text style={styles.username}>
-                {collectorName}
-              </Text>
+              <Text style={styles.welcome}>Welcome Back,</Text>
+              <Text style={styles.username}>{collectorName}</Text>
             </View>
 
             <View style={styles.headerIcons}>
@@ -133,40 +132,42 @@ export default function CollectorDashboardScreen({ navigation }) {
             </View>
           </View>
 
+          {/* 🔥 UPDATED HEADER STATS */}
           <View style={styles.headerStats}>
-            <View style={styles.statCard}><Clock color="#E0F2FE" size={20} /><Text style={styles.statLabel}>Today's Pickups</Text><Text style={styles.statValue}>{stats.todayPickups}</Text></View>
-            <View style={styles.statCard}><Wallet color="#E0F2FE" size={20} /><Text style={styles.statLabel}>Today's Earnings</Text><Text style={styles.statValue}>₹{stats.todayEarnings}</Text></View>
+            <View style={styles.statCard}>
+              <Clock color="#E0F2FE" size={20} />
+              <Text style={styles.statLabel}>Today's Pickups</Text>
+              <Text style={styles.statValue}>
+                {stats.todayPickups}
+              </Text>
+
+              {/* ✅ NEW 0 / 1 INDICATOR */}
+              <View style={styles.statusRow}>
+                <Text style={styles.completedText}>
+                  {stats.completed}
+                </Text>
+                <Text style={styles.separator}> / </Text>
+                <Text style={styles.pendingText}>
+                  {stats.pending}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.statCard}>
+              <Wallet color="#E0F2FE" size={20} />
+              <Text style={styles.statLabel}>Today's Earnings</Text>
+              <Text style={styles.statValue}>
+                ₹{stats.todayEarnings}
+              </Text>
+            </View>
           </View>
         </View>
 
+        {/* CONTENT */}
         <View style={styles.content}>
-          <View style={styles.row}>
-            <View style={styles.whiteCard}>
-              <Clock color="#F97316" size={20} />
-              <Text style={styles.cardLabel}>
-                Pending
-              </Text>
-              <Text style={styles.cardValue}>
-                {stats.pending} pickups
-              </Text>
-            </View>
-
-            <View style={styles.whiteCard}>
-              <CheckCircle color="#22C55E" size={20} />
-              <Text style={styles.cardLabel}>
-                Completed
-              </Text>
-              <Text style={styles.cardValue}>
-                {stats.completed} pickups
-              </Text>
-            </View>
-          </View>
-
           <TouchableOpacity
             style={styles.secondaryButton}
-            onPress={() =>
-              navigation.navigate("PickupHistory")
-            }
+            onPress={() => navigation.navigate("PickupHistory")}
           >
             <History color="#2563EB" size={20} />
             <Text style={styles.secondaryButtonText}>
@@ -179,12 +180,11 @@ export default function CollectorDashboardScreen({ navigation }) {
           </Text>
 
           {loading ? (
-            <ActivityIndicator
-              size="large"
-              color="#2563EB"
-            />
+            <ActivityIndicator size="large" color="#2563EB" />
           ) : todayPickups.length === 0 ? (
-            <Text style={styles.emptyText}>No pickups scheduled today</Text>
+            <Text style={styles.emptyText}>
+              No pickups scheduled today
+            </Text>
           ) : (
             todayPickups.map((pickup) => (
               <TouchableOpacity
@@ -207,14 +207,16 @@ export default function CollectorDashboardScreen({ navigation }) {
                   ]}
                 >
                   <Text style={styles.customerName}>
-                    Pickup ID: {pickup.display_id || pickup.id.slice(0, 6)}
+                    Pickup ID:{" "}
+                    {pickup.display_id ||
+                      pickup.id.slice(0, 6)}
                   </Text>
 
                   <Text style={styles.subText}>
                     {Array.isArray(pickup.items)
                       ? pickup.items
-                        .map((i) => i.name)
-                        .join(", ")
+                          .map((i) => i.name)
+                          .join(", ")
                       : "Scrap Items"}
                   </Text>
 
@@ -243,28 +245,34 @@ export default function CollectorDashboardScreen({ navigation }) {
   );
 }
 
-/* STYLES (unchanged) */
+/* STYLES */
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#2563EB" },
   container: { flex: 1, backgroundColor: "#F9FAFB" },
+
   header: {
     backgroundColor: "#2563EB",
     padding: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
   },
+
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 20,
   },
+
   welcome: { color: "#DBEAFE", fontSize: 14 },
+
   username: {
     color: "#fff",
     fontSize: 20,
     fontWeight: "700",
   },
+
   headerIcons: { flexDirection: "row", gap: 10 },
+
   iconCircle: {
     width: 40,
     height: 40,
@@ -273,45 +281,54 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
   headerStats: { flexDirection: "row", gap: 12 },
+
   statCard: {
     flex: 1,
     backgroundColor: "rgba(255,255,255,0.15)",
     padding: 14,
     borderRadius: 14,
   },
+
   statLabel: {
     color: "#DBEAFE",
     fontSize: 12,
     marginTop: 6,
   },
+
   statValue: {
     color: "#fff",
     fontSize: 22,
     fontWeight: "700",
   },
-  content: { padding: 20 },
-  row: {
+
+  /* 🔥 NEW STATUS UI */
+  statusRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 20,
-  },
-  whiteCard: {
-    flex: 1,
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 14,
-  },
-  cardLabel: {
-    color: "#6B7280",
-    fontSize: 12,
     marginTop: 6,
+    alignItems: "center",
   },
-  cardValue: {
-    color: "#111827",
+
+  completedText: {
+    color: "#22C55E",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
   },
+
+  pendingText: {
+    color: "#EF4444",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  separator: {
+    color: "#E0F2FE",
+    marginHorizontal: 4,
+  },
+
+  content: { padding: 20 },
+
   secondaryButton: {
     backgroundColor: "#E0E7FF",
     height: 52,
@@ -322,17 +339,20 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 24,
   },
+
   secondaryButtonText: {
     color: "#2563EB",
     fontSize: 16,
     fontWeight: "600",
   },
+
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
     color: "#111827",
   },
+
   scheduleCard: {
     backgroundColor: "#fff",
     padding: 16,
@@ -340,29 +360,35 @@ const styles = StyleSheet.create({
     borderLeftWidth: 5,
     marginBottom: 12,
   },
+
   customerName: {
     fontSize: 16,
     fontWeight: "600",
     color: "#111827",
   },
+
   subText: {
     color: "#6B7280",
     marginTop: 4,
   },
+
   timeText: {
     color: "#9CA3AF",
     marginTop: 4,
   },
+
   pendingBadge: {
     marginTop: 6,
     color: "#F97316",
     fontWeight: "700",
   },
+
   completedBadge: {
     marginTop: 6,
     color: "#22C55E",
     fontWeight: "700",
   },
+
   emptyText: {
     textAlign: "center",
     marginTop: 20,
