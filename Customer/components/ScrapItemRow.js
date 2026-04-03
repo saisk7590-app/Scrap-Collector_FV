@@ -28,37 +28,45 @@ export default function ScrapItemRow({ item, config, data, onQtyChange, onWeight
         </View>
       </TouchableOpacity>
 
-      {config[item]?.type === "quantity" && (
-        <View style={{ flexDirection: "row", alignItems: "center", width: 110, justifyContent: "center" }}>
-          <TouchableOpacity onPress={() => onQtyChange(item, -1)} style={{ width: 32, height: 32, justifyContent: "center", alignItems: "center", borderRadius: 6, backgroundColor: "#F3F4F6" }}>
-            <Minus size={16} />
-          </TouchableOpacity>
+      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "flex-end" }}>
+        {config[item]?.hasQuantity && (
+          <View style={{ flexDirection: "row", alignItems: "center", width: 110, justifyContent: "center" }}>
+            <TouchableOpacity 
+              onPress={() => onQtyChange(item, -1)} 
+              style={{ width: 32, height: 32, justifyContent: "center", alignItems: "center", borderRadius: 6, backgroundColor: "#F3F4F6" }}
+            >
+              <Minus size={16} />
+            </TouchableOpacity>
 
-          <TextInput
-            style={{ width: 50, height: 36, borderWidth: 1, borderColor: "#D1D5DB", textAlign: "center", marginHorizontal: 4, borderRadius: 6 }}
-            keyboardType="numeric"
-            value={String(data[item].quantity)}
-            onChangeText={(t) => onQtyChange(item, Number(t) - data[item].quantity)}
-          />
+            <TextInput
+              style={{ width: 40, height: 36, borderWidth: 1, borderColor: "#D1D5DB", textAlign: "center", marginHorizontal: 4, borderRadius: 6 }}
+              keyboardType="numeric"
+              value={String(data[item].quantity || 0)}
+              onChangeText={(t) => onQtyChange(item, (parseInt(t) || 0) - (data[item].quantity || 0))}
+            />
 
-          <TouchableOpacity onPress={() => onQtyChange(item, 1)} style={{ width: 32, height: 32, justifyContent: "center", alignItems: "center", borderRadius: 6, backgroundColor: "#F3F4F6" }}>
-            <Plus size={16} />
-          </TouchableOpacity>
-        </View>
-      )}
+            <TouchableOpacity 
+              onPress={() => onQtyChange(item, 1)} 
+              style={{ width: 32, height: 32, justifyContent: "center", alignItems: "center", borderRadius: 6, backgroundColor: "#F3F4F6" }}
+            >
+              <Plus size={16} />
+            </TouchableOpacity>
+          </View>
+        )}
 
-      {config[item]?.type === "weight" && (
-        <View style={{ flexDirection: "row", alignItems: "center", width: 110, justifyContent: "center" }}>
-          <TextInput
-            style={{ width: 70, height: 36, borderWidth: 1, borderColor: "#D1D5DB", textAlign: "center", borderRadius: 6 }}
-            keyboardType="decimal-pad"
-            placeholder="0.00"
-            value={data[item].weight}
-            onChangeText={(t) => onWeightChange(item, t)}
-          />
-          <Text style={{ marginLeft: 6 }}>kg</Text>
-        </View>
-      )}
+        {config[item]?.hasWeight && (
+          <View style={{ flexDirection: "row", alignItems: "center", marginLeft: config[item]?.hasQuantity ? 10 : 0 }}>
+            <TextInput
+              style={{ width: 60, height: 36, borderWidth: 1, borderColor: "#D1D5DB", textAlign: "center", borderRadius: 6 }}
+              keyboardType="decimal-pad"
+              placeholder="0.00"
+              value={data[item].weight}
+              onChangeText={(t) => onWeightChange(item, t)}
+            />
+            <Text style={{ marginLeft: 4, fontSize: 13, color: COLORS.textSecondary }}>kg</Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 }

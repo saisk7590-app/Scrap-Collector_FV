@@ -5,7 +5,7 @@ import { CheckCircle } from "lucide-react-native";
 import { COLORS } from "../../constants/colors";
 
 export default function PickupSuccessScreen({ navigation, route }) {
-  const { time, alternateNumber } = route.params || {};
+  const { time, date, alternateNumber } = route.params || {};
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -18,6 +18,13 @@ export default function PickupSuccessScreen({ navigation, route }) {
     return () => clearTimeout(timer);
   }, [navigation]);
 
+  const displayDate = date ? new Date(date).toLocaleDateString("en-IN", {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }) : "";
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -28,12 +35,13 @@ export default function PickupSuccessScreen({ navigation, route }) {
         <Text style={styles.title}>Pickup Scheduled!</Text>
 
         <Text style={styles.subtitle}>
-          Your pickup has been confirmed.
+          Your pickup has been confirmed for:
         </Text>
 
         <Text style={styles.timeText}>
-          Collector will arrive at{" "}
-          <Text style={styles.timeHighlight}>{time}</Text>
+          <Text style={styles.dateHighlight}>{displayDate}</Text>
+          {"\n"}
+          between <Text style={styles.timeHighlight}>{time}</Text>
         </Text>
 
         {alternateNumber ? (
@@ -98,6 +106,11 @@ const styles = StyleSheet.create({
   timeHighlight: {
     color: COLORS.primary,
     fontWeight: "600",
+  },
+  dateHighlight: {
+    color: COLORS.textPrimary,
+    fontWeight: "700",
+    fontSize: 16,
   },
 
   altText: {

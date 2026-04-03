@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS wallet_transactions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount DECIMAL(10,2) NOT NULL,
+  type VARCHAR(20) NOT NULL CHECK (type IN ('CREDIT', 'DEBIT')),
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

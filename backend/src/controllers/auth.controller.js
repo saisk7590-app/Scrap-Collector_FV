@@ -11,6 +11,7 @@ const JWT_EXPIRES_IN = '7d';
    REGISTER
 ======================= */
 exports.register = async (req, res, next) => {
+    const client = await pool.connect();
     try {
         let { email, password, fullName, phone, role } = req.body;
 
@@ -18,50 +19,110 @@ exports.register = async (req, res, next) => {
             return ApiResponse.error(res, "Full name, Password, and either Email or Phone are required", 400);
         }
 
-        // If email is missing, generate a dummy one from phone
+        const incomingRole = role || 'customer';
+        
+        // Role mapping to match DB role names
+        const roleMap = {
+            'government': 'govt_sector',
+            'community': 'gated_community',
+            'corporate': 'corporate',
+            'customer': 'customer',
+            'collector': 'collector'
+        };
+        
+        const userRoleName = roleMap[incomingRole.toLowerCase()] || incomingRole.toLowerCase();
+
+        // 1. Check if role exists BEFORE doing anything
+        const roleResult = await client.query('SELECT id FROM roles WHERE LOWER(name) = $1', [userRoleName]);
+        if (roleResult.rows.length === 0) {
+            return ApiResponse.error(res, `Invalid role: ${userRoleName}`, 400);
+        }
+        const roleId = roleResult.rows[0].id;
+
+        // 2. Generate dummy email if missing
         if (!email && phone) {
             email = `${phone}@scrapcollector.in`;
         }
 
-        // Check if user already exists
-        const existingUser = await pool.query(
-            'SELECT id FROM users WHERE email = $1',
+        await client.query('BEGIN');
+
+        // 3. Check if user already exists
+        const existingUser = await client.query(
+            'SELECT id FROM users WHERE LOWER(email) = $1',
             [email.toLowerCase()]
         );
 
         if (existingUser.rows.length > 0) {
+            await client.query('ROLLBACK');
             return ApiResponse.error(res, "User already exists with this identifier", 409);
         }
 
-        // Hash password
+        // 4. Hash password
         const salt = await bcrypt.genSalt(12);
         const passwordHash = await bcrypt.hash(password, salt);
 
-        // Insert user
-        const userResult = await pool.query(
+        // 5. Insert user
+        const userResult = await client.query(
             'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at',
             [email.toLowerCase(), passwordHash]
         );
-
         const user = userResult.rows[0];
 
-        // Fetch role_id from roles table
-        const userRoleName = role || 'customer';
-        const roleResult = await pool.query('SELECT id FROM roles WHERE name = $1', [userRoleName.toLowerCase()]);
-        
-        if (roleResult.rows.length === 0) {
-            return ApiResponse.error(res, "Invalid role", 400);
-        }
-        
-        const roleId = roleResult.rows[0].id;
-
-        // Insert profile
-        const profileResult = await pool.query(
+        // 6. Insert profile
+        const profileResult = await client.query(
             'INSERT INTO profiles (user_id, full_name, phone, role_id) VALUES ($1, $2, $3, $4) RETURNING *',
             [user.id, fullName, phone, roleId]
         );
-
         const profile = profileResult.rows[0];
+
+        // 7. Insert into role-specific tables & Sync Address
+        const normalizedRole = userRoleName.toLowerCase();
+        let signupAddress = null;
+
+        if (normalizedRole === 'customer') {
+            await client.query('INSERT INTO customers (user_id, profile_id) VALUES ($1, $2)', [user.id, profile.id]);
+        } else if (normalizedRole === 'collector') {
+            await client.query('INSERT INTO collectors (user_id, profile_id) VALUES ($1, $2)', [user.id, profile.id]);
+        } else if (normalizedRole === 'corporate') {
+            const { companyName, contactPerson, contactPhone, companyEmail, gstNumber, officeAddress } = req.body;
+            signupAddress = officeAddress;
+            await client.query(
+                `INSERT INTO corporates (user_id, company_name, contact_person, contact_phone, company_email, gst_number, address) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`, 
+                [user.id, companyName, contactPerson, contactPhone, companyEmail, gstNumber, officeAddress]
+            );
+        } else if (normalizedRole === 'govt_sector') {
+            const { departmentName, officerName, contactNumber, zone, officeLocation } = req.body;
+            signupAddress = officeLocation;
+            await client.query(
+                `INSERT INTO government_sectors (user_id, department_name, officer_name, contact_number, zone, address) 
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [user.id, departmentName, officerName, contactNumber, zone, officeLocation]
+            );
+        } else if (normalizedRole === 'gated_community') {
+            const { communityName, managerName, managerPhone, totalUnits, areaAddress } = req.body;
+            signupAddress = areaAddress;
+            await client.query(
+                `INSERT INTO gated_communities (user_id, community_name, manager_name, manager_phone, total_units, address) 
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [user.id, communityName, managerName, managerPhone, totalUnits, areaAddress]
+            );
+        }
+
+        // 8. If an address was provided in signup, sync it to Profile and UserAddresses
+        if (signupAddress) {
+            // Update profile with the typed address
+            await client.query('UPDATE profiles SET address = $1 WHERE user_id = $2', [signupAddress, user.id]);
+            
+            // Add to Manage Addresses list
+            await client.query(
+                `INSERT INTO user_addresses (user_id, type, address, is_default) 
+                 VALUES ($1, $2, $3, $4)`,
+                [user.id, 'Main', signupAddress, true]
+            );
+        }
+
+        await client.query('COMMIT');
 
         // Generate JWT
         const token = jwt.sign(
@@ -83,7 +144,10 @@ exports.register = async (req, res, next) => {
         }, 201);
 
     } catch (err) {
+        await client.query('ROLLBACK');
         next(err);
+    } finally {
+        client.release();
     }
 };
 

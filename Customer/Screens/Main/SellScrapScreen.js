@@ -83,13 +83,25 @@ export default function SellScrapScreen({ navigation, route }) {
   const handleSubmit = async () => {
     const selectedItems = Object.keys(items)
       .filter((k) => items[k].selected)
-      .map((k) => ({
-        name: k,
-        quantity: items[k].quantity,
-        weight: parseFloat(items[k].weight) || 0,
-        price: scrapConfig[k]?.price || 0,
-        type: scrapConfig[k]?.type || "weight",
-      }));
+      .map((k) => {
+        const config = scrapConfig[k];
+        let measurementType = 'weight';
+        if (config?.hasWeight && config?.hasQuantity) {
+            measurementType = (parseFloat(items[k].weight) > 0) ? 'weight' : 'quantity';
+        } else if (config?.hasQuantity) {
+            measurementType = 'quantity';
+        }
+
+        return {
+          name: k,
+          quantity: items[k].quantity || 0,
+          weight: parseFloat(items[k].weight) || 0,
+          price: config?.price || 0,
+          measurement_type: measurementType,
+          categoryId: config?.category_id,
+          itemId: config?.id
+        };
+      });
 
     if (selectedItems.length === 0) {
       Alert.alert("Error", "Please select at least one item");
@@ -100,10 +112,12 @@ export default function SellScrapScreen({ navigation, route }) {
       setSubmitLoading(true);
 
       const totalWeight = selectedItems.reduce((acc, i) => acc + i.weight, 0);
+      const totalQty = selectedItems.reduce((acc, i) => acc + i.quantity, 0);
 
       const data = await apiRequest("/scrap/create", "POST", {
         items: selectedItems,
-        totalWeight,
+        total_weight: totalWeight,
+        totalQty: totalQty
       });
 
       if (data.scrapRequest) {

@@ -8,7 +8,6 @@ import {
   Platform,
   ScrollView,
   Switch,
-  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -32,6 +31,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigation } from "@react-navigation/native";
 import { apiRequest, getStoredUser } from "../../src/lib/api";
 import { useFocusEffect } from "@react-navigation/native";
+import ProfileAvatar from "../../components/ProfileAvatar";
 
 const InfoRow = ({ icon, label, value, highlight }) => (
   <View style={styles.infoRow}>
@@ -58,10 +58,12 @@ export default function CollectorProfileScreen() {
     role: "collector",
     email: "",
     joinedAt: "",
+    profileImageUrl: "",
   });
   const [availability, setAvailability] = useState(true);
   const [autoAccept, setAutoAccept] = useState(false);
   const [totalPickups, setTotalPickups] = useState(0);
+  const [imageRefreshKey, setImageRefreshKey] = useState(Date.now());
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -77,7 +79,9 @@ export default function CollectorProfileScreen() {
             role: data.profile.role || "collector",
             joinedAt: data.profile.createdAt || "",
             email: data.profile.email || "",
+            profileImageUrl: data.profile.profileImageUrl || "",
           });
+          setImageRefreshKey(Date.now());
         }
       } catch {
         const stored = await getStoredUser();
@@ -121,12 +125,17 @@ export default function CollectorProfileScreen() {
               phone: data.profile.phone || prev.phone,
               address: data.profile.address || prev.address,
               walletBalance: data.profile.walletBalance || prev.walletBalance,
+              profileImageUrl: data.profile.profileImageUrl || prev.profileImageUrl,
             }));
+            setImageRefreshKey(Date.now());
           }
         } catch {}
       })();
     }, [])
   );
+  const profileImageUri = profile.profileImageUrl
+    ? `${profile.profileImageUrl}${profile.profileImageUrl.includes("?") ? "&" : "?"}t=${imageRefreshKey}`
+    : null;
 
   const handleLogout = async () => {
     if (Platform.OS === "web") {
@@ -158,9 +167,12 @@ export default function CollectorProfileScreen() {
         {/* Hero card */}
         <View style={styles.card}>
           <View style={styles.heroTop}>
-            <Image
-              source={{ uri: "https://i.pravatar.cc/120?img=65" }}
-              style={styles.avatar}
+            <ProfileAvatar
+              uri={profileImageUri}
+              name={profile.fullName}
+              size={64}
+              backgroundColor="#03C75A"
+              borderColor="#FFFFFF"
             />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <View style={styles.nameRow}>

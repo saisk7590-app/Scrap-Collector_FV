@@ -21,7 +21,10 @@ exports.getScrapItems = async (req, res) => {
         i.name,
         i.measurement_type,
         i.base_price,
-        c.name as category_name
+        i.category_id,
+        c.name as category_name,
+        c.has_weight,
+        c.has_quantity
       FROM scrap_items i
       JOIN scrap_categories c ON i.category_id = c.id
       ORDER BY c.created_at ASC, i.created_at ASC
@@ -44,8 +47,12 @@ exports.getScrapItems = async (req, res) => {
       
       // Config mapping (includes measurement type and base price)
       config[item.name] = {
+        id: item.id,
+        category_id: item.category_id,
         type: item.measurement_type,
-        price: parseFloat(item.base_price) || 0
+        price: parseFloat(item.base_price) || 0,
+        hasWeight: item.has_weight,
+        hasQuantity: item.has_quantity
       };
     });
 

@@ -5,17 +5,22 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Linking,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ArrowLeft,
   Phone,
+  MessageSquare,
   MapPin,
   Calendar,
   Clock,
   Package,
   User,
 } from "lucide-react-native";
+import { apiRequest } from "../../src/lib/api";
+import { COLORS } from "../../constants/colors";
 
 export default function PickupDetailsScreen({ navigation, route }) {
   const { pickup } = route.params;
@@ -59,9 +64,9 @@ export default function PickupDetailsScreen({ navigation, route }) {
             <View style={styles.iconCircle}>
               <User size={18} color="#2563EB" />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.label}>Customer Name</Text>
-              <Text style={styles.value}>{pickup.customer_name || 'N/A'}</Text>
+              <Text style={styles.value}>{pickup.customer_name || pickup.customerName || 'N/A'}</Text>
             </View>
           </View>
 
@@ -69,9 +74,28 @@ export default function PickupDetailsScreen({ navigation, route }) {
             <View style={styles.iconCircle}>
               <Phone size={18} color="#2563EB" />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.label}>Phone Number</Text>
-              <Text style={styles.link}>{pickup.customer_phone || pickup.alternate_number || 'N/A'}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15, marginTop: 4 }}>
+                <Text style={styles.link}>{pickup.customer_phone || pickup.alternate_number || 'N/A'}</Text>
+                
+                {(pickup.customer_phone || pickup.alternate_number) && (
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity 
+                      onPress={() => Linking.openURL(`tel:${pickup.customer_phone || pickup.alternate_number}`)}
+                      style={styles.actionIcon}
+                    >
+                      <Phone size={16} color="#FFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      onPress={() => Linking.openURL(`sms:${pickup.customer_phone || pickup.alternate_number}`)}
+                      style={styles.actionIcon}
+                    >
+                      <MessageSquare size={16} color="#FFF" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
 
@@ -84,15 +108,12 @@ export default function PickupDetailsScreen({ navigation, route }) {
               <Text style={styles.value}>
                 {[
                   pickup.house_no,
-                  pickup.address,
+                  pickup.address || pickup.customer_address,
                   pickup.area,
                   pickup.pincode,
                   pickup.city
                 ].filter(Boolean).join(', ') || 'N/A'}
               </Text>
-              {pickup.landmark && (
-                <Text style={[styles.label, { marginTop: 4 }]}>Landmark: {pickup.landmark}</Text>
-              )}
             </View>
           </View>
         </View>
@@ -112,9 +133,11 @@ export default function PickupDetailsScreen({ navigation, route }) {
           <View style={styles.infoRow}>
             <Calendar size={18} color="#2563EB" />
             <View>
-              <Text style={styles.label}>Date</Text>
+              <Text style={styles.label}>Scheduled Date</Text>
               <Text style={styles.value}>
-                {pickup.pickupDate || (pickup.created_at ? new Date(pickup.created_at).toLocaleDateString() : 'N/A')}
+                {pickup.pickup_date ? new Date(pickup.pickup_date).toLocaleDateString() : 
+                 (pickup.pickupDate ? new Date(pickup.pickupDate).toLocaleDateString() : 
+                  (pickup.created_at ? new Date(pickup.created_at).toLocaleDateString() : 'N/A'))}
               </Text>
             </View>
           </View>
@@ -169,10 +192,34 @@ export default function PickupDetailsScreen({ navigation, route }) {
       {pickup.status?.toLowerCase() === "scheduled" && (
         <View style={styles.bottomBar}>
           <TouchableOpacity
+            style={styles.acceptButton}
+            onPress={async () => {
+              try {
+                const res = await apiRequest(`/pickups/${pickup.id}/status`, "PUT", {
+                  status: "in_progress",
+                });
+                if (res.pickup) {
+                  // Update local state or navigate
+                  alert("Pickup Accepted! Customer has been notified.");
+                  navigation.goBack(); // Go back to dashboard to see updated list
+                }
+              } catch (err) {
+                alert("Failed to accept pickup");
+              }
+            }}
+          >
+            <Text style={styles.startText}>Accept & Notify Customer</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {pickup.status?.toLowerCase() === "in_progress" && (
+        <View style={styles.bottomBar}>
+          <TouchableOpacity
             style={styles.startButton}
             onPress={() => navigation.navigate("PickupAction", { pickup })}
           >
-            <Text style={styles.startText}>Start Pickup</Text>
+            <Text style={styles.startText}>Start Verification</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -253,6 +300,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
+  actionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#2563EB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   iconCircle: {
     width: 40,
     height: 40,
@@ -338,6 +393,13 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 16,
     fontWeight: "600",
+  },
+  acceptButton: {
+    height: 52,
+    backgroundColor: "#10B981", // Emerald green for acceptance
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 

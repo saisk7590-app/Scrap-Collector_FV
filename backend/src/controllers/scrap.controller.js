@@ -7,17 +7,17 @@ const ApiResponse = require('../utils/apiResponse');
 exports.createScrapRequest = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const { items, totalWeight } = req.body;
+        const { items, total_weight, totalQty } = req.body;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return ApiResponse.error(res, "At least one item is required", 400);
         }
 
         const result = await pool.query(
-            `INSERT INTO scrap_requests (user_id, items, total_weight, status)
-       VALUES ($1, $2, $3, 'draft')
-       RETURNING *`,
-            [userId, JSON.stringify(items), totalWeight || 0]
+            `INSERT INTO scrap_requests (user_id, items, total_weight, total_qty, status)
+             VALUES ($1, $2, $3, $4, 'draft')
+             RETURNING *`,
+            [userId, JSON.stringify(items), total_weight || 0, totalQty || 0]
         );
 
         return ApiResponse.success(res, "Scrap request created", { scrapRequest: result.rows[0] }, 201);

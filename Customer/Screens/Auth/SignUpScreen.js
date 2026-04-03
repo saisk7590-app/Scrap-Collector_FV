@@ -6,9 +6,22 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Recycle } from "lucide-react-native";
+import { 
+  Recycle, 
+  User, 
+  Phone, 
+  Mail, 
+  Building, 
+  Shield, 
+  MapPin, 
+  Map, 
+  Home, 
+  Layout,
+  Lock
+} from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Picker } from "@react-native-picker/picker";
 
@@ -30,14 +43,26 @@ export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
 
   // ===== ROLE BASED STATES =====
+  // Corporate
   const [companyName, setCompanyName] = useState("");
+  const [contactPerson, setContactPerson] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [companyEmail, setCompanyEmail] = useState("");
   const [gstNumber, setGstNumber] = useState("");
   const [officeAddress, setOfficeAddress] = useState("");
 
+  // Government
   const [departmentName, setDepartmentName] = useState("");
+  const [officerName, setOfficerName] = useState("");
+  const [contactNumber, setContactNumber] = useState("");
+  const [zone, setZone] = useState("");
   const [officeLocation, setOfficeLocation] = useState("");
 
+  // Gated Community
   const [communityName, setCommunityName] = useState("");
+  const [managerName, setManagerName] = useState("");
+  const [managerPhone, setManagerPhone] = useState("");
+  const [totalUnits, setTotalUnits] = useState("");
   const [areaAddress, setAreaAddress] = useState("");
 
   // ===== ROLES =====
@@ -45,8 +70,8 @@ export default function SignUpScreen() {
     { label: "Customer", value: "customer" },
     { label: "Collector", value: "collector" },
     { label: "Corporate", value: "corporate" },
-    { label: "Government Sector", value: "government" },
-    { label: "Gated Community", value: "community" },
+    { label: "Government Sector", value: "govt_sector" },
+    { label: "Gated Community", value: "gated_community" },
   ];
 
   // ===== SIGNUP HANDLER =====
@@ -65,17 +90,17 @@ export default function SignUpScreen() {
     }
 
     // Role-specific validation
-    if (selectedRole === "corporate" && (!companyName || !gstNumber)) {
-      Alert.alert("Error", "Please fill corporate details");
+    if (selectedRole === "corporate" && !companyName) {
+      Alert.alert("Error", "Please fill company name");
       return;
     }
 
-    if (selectedRole === "government" && !departmentName) {
+    if (selectedRole === "govt_sector" && !departmentName) {
       Alert.alert("Error", "Please fill department details");
       return;
     }
 
-    if (selectedRole === "community" && !communityName) {
+    if (selectedRole === "gated_community" && !communityName) {
       Alert.alert("Error", "Please fill community details");
       return;
     }
@@ -89,23 +114,24 @@ export default function SignUpScreen() {
         phone: mobile,
         password,
         role: selectedRole,
+        // Role specifics
+        companyName,
+        contactPerson,
+        contactPhone,
+        companyEmail,
+        gstNumber,
+        officeAddress,
+        departmentName,
+        officerName,
+        contactNumber,
+        zone,
+        officeLocation,
+        communityName,
+        managerName,
+        managerPhone,
+        totalUnits,
+        areaAddress,
       };
-
-      if (selectedRole === "corporate") {
-        payload.companyName = companyName;
-        payload.gstNumber = gstNumber;
-        payload.officeAddress = officeAddress;
-      }
-
-      if (selectedRole === "government") {
-        payload.departmentName = departmentName;
-        payload.officeLocation = officeLocation;
-      }
-
-      if (selectedRole === "community") {
-        payload.communityName = communityName;
-        payload.areaAddress = areaAddress;
-      }
 
       const data = await apiRequest("/auth/register", "POST", payload);
 
@@ -119,134 +145,199 @@ export default function SignUpScreen() {
     }
   };
 
+  const renderRoleSpecificFields = () => {
+    if (selectedRole === "corporate") {
+      return (
+        <View style={styles.roleFields}>
+          <Text style={styles.roleSubTitle}>Corporate Details</Text>
+          <CustomInput
+            placeholder="Company Name"
+            value={companyName}
+            onChangeText={setCompanyName}
+          />
+          <CustomInput
+            placeholder="Contact Person Name"
+            value={contactPerson}
+            onChangeText={setContactPerson}
+          />
+          <CustomInput
+            placeholder="Contact Phone"
+            value={contactPhone}
+            onChangeText={setContactPhone}
+            keyboardType="phone-pad"
+          />
+          <CustomInput
+            placeholder="Company Email"
+            value={companyEmail}
+            onChangeText={setCompanyEmail}
+            keyboardType="email-address"
+          />
+          <CustomInput
+            placeholder="GST Number (Optional)"
+            value={gstNumber}
+            onChangeText={setGstNumber}
+          />
+          <CustomInput
+            placeholder="Company Office Address"
+            value={officeAddress}
+            onChangeText={setOfficeAddress}
+          />
+        </View>
+      );
+    }
+    
+    if (selectedRole === "govt_sector") {
+      return (
+        <View style={styles.roleFields}>
+          <Text style={styles.roleSubTitle}>Department Details</Text>
+          <CustomInput
+            placeholder="Department Name"
+            value={departmentName}
+            onChangeText={setDepartmentName}
+          />
+          <CustomInput
+            placeholder="Officer Name"
+            value={officerName}
+            onChangeText={setOfficerName}
+          />
+          <CustomInput
+            placeholder="Contact Member Phone"
+            value={contactNumber}
+            onChangeText={setContactNumber}
+            keyboardType="phone-pad"
+          />
+          <CustomInput
+            placeholder="Zone (e.g. Zone 1)"
+            value={zone}
+            onChangeText={setZone}
+          />
+          <CustomInput
+            placeholder="Office Location Address"
+            value={officeLocation}
+            onChangeText={setOfficeLocation}
+          />
+        </View>
+      );
+    }
+    
+    if (selectedRole === "gated_community") {
+      return (
+        <View style={styles.roleFields}>
+          <Text style={styles.roleSubTitle}>Community Details</Text>
+          <CustomInput
+            placeholder="Community Name"
+            value={communityName}
+            onChangeText={setCommunityName}
+          />
+          <CustomInput
+            placeholder="Manager Name"
+            value={managerName}
+            onChangeText={setManagerName}
+          />
+          <CustomInput
+            placeholder="Manager Phone"
+            value={managerPhone}
+            onChangeText={setManagerPhone}
+            keyboardType="phone-pad"
+          />
+          <CustomInput
+            placeholder="Total Units/Houses"
+            value={totalUnits}
+            onChangeText={setTotalUnits}
+            keyboardType="number-pad"
+          />
+          <CustomInput
+            placeholder="Area/Location Address"
+            value={areaAddress}
+            onChangeText={setAreaAddress}
+          />
+        </View>
+      );
+    }
+    
+    return null;
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <View style={styles.card}>
-          <Recycle size={60} color={COLORS.primary} style={styles.logo} />
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.card}>
+            <Recycle size={60} color={COLORS.primary} style={styles.logo} />
 
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>
-            Join and start recycling today
-          </Text>
-
-          {/* ===== ROLE DROPDOWN ===== */}
-          <Text style={styles.roleLabel}>I am a:</Text>
-          <View style={styles.dropdown}>
-            <Picker
-              selectedValue={selectedRole}
-              onValueChange={(itemValue) => setSelectedRole(itemValue)}
-            >
-              <Picker.Item label="Select Role" value="" />
-              {ROLES.map((role) => (
-                <Picker.Item
-                  key={role.value}
-                  label={role.label}
-                  value={role.value}
-                />
-              ))}
-            </Picker>
-          </View>
-
-          {/* ===== COMMON FIELDS ===== */}
-          <CustomInput
-            placeholder="Full Name"
-            value={fullName}
-            onChangeText={setFullName}
-          />
-
-          <CustomInput
-            placeholder="Mobile Number"
-            keyboardType="phone-pad"
-            value={mobile}
-            onChangeText={setMobile}
-          />
-
-          <CustomInput
-            placeholder="Password"
-            secure
-            value={password}
-            onChangeText={setPassword}
-          />
-
-          {/* ===== DYNAMIC FIELDS ===== */}
-
-          {/* Corporate */}
-          {selectedRole === "corporate" && (
-            <>
-              <CustomInput
-                placeholder="Company Name"
-                value={companyName}
-                onChangeText={setCompanyName}
-              />
-              <CustomInput
-                placeholder="GST Number"
-                value={gstNumber}
-                onChangeText={setGstNumber}
-              />
-              <CustomInput
-                placeholder="Office Address"
-                value={officeAddress}
-                onChangeText={setOfficeAddress}
-              />
-            </>
-          )}
-
-          {/* Government */}
-          {selectedRole === "government" && (
-            <>
-              <CustomInput
-                placeholder="Department Name"
-                value={departmentName}
-                onChangeText={setDepartmentName}
-              />
-              <CustomInput
-                placeholder="Office Location"
-                value={officeLocation}
-                onChangeText={setOfficeLocation}
-              />
-            </>
-          )}
-
-          {/* Community */}
-          {selectedRole === "community" && (
-            <>
-              <CustomInput
-                placeholder="Community Name"
-                value={communityName}
-                onChangeText={setCommunityName}
-              />
-              <CustomInput
-                placeholder="Area / Address"
-                value={areaAddress}
-                onChangeText={setAreaAddress}
-              />
-            </>
-          )}
-
-          {/* ===== BUTTON ===== */}
-          <CustomButton
-            title="Sign Up"
-            onPress={handleSignUp}
-            loading={loading}
-          />
-
-          {/* ===== FOOTER ===== */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Already have an account?{" "}
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>
+              Join and start recycling today
             </Text>
-            <Text
-              style={styles.link}
-              onPress={() => navigation.navigate(ROUTES.LOGIN)}
-            >
-              Login
-            </Text>
+
+            {/* ===== ROLE DROPDOWN ===== */}
+            <Text style={styles.roleLabel}>I am a:</Text>
+            <View style={styles.dropdown}>
+              <Picker
+                selectedValue={selectedRole}
+                onValueChange={(itemValue) => setSelectedRole(itemValue)}
+              >
+                <Picker.Item label="Select Role" value="" />
+                {ROLES.map((role) => (
+                  <Picker.Item
+                    key={role.value}
+                    label={role.label}
+                    value={role.value}
+                  />
+                ))}
+              </Picker>
+            </View>
+
+            {/* ===== COMMON FIELDS ===== */}
+            <CustomInput
+              placeholder="Full Name"
+              value={fullName}
+              onChangeText={setFullName}
+            />
+
+            <CustomInput
+              placeholder="Mobile Number"
+              keyboardType="phone-pad"
+              value={mobile}
+              onChangeText={setMobile}
+            />
+
+            <CustomInput
+              placeholder="Password"
+              secure
+              value={password}
+              onChangeText={setPassword}
+            />
+
+            {renderRoleSpecificFields()}
+
+            <CustomButton
+              title="Sign Up"
+              onPress={handleSignUp}
+              loading={loading}
+            />
+
+            {/* ===== FOOTER ===== */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                Already have an account?{" "}
+              </Text>
+              <Text
+                style={styles.link}
+                onPress={() => navigation.navigate(ROUTES.LOGIN)}
+              >
+                Login
+              </Text>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -260,8 +351,11 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    justifyContent: "center",
     padding: 20,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
   },
   card: {
     backgroundColor: "#FFFFFF",
@@ -315,5 +409,20 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: FONTS.size.md,
     fontWeight: "bold",
+  },
+  roleFields: {
+    marginTop: 10,
+    marginBottom: 20,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+  },
+  roleSubTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.primary || "#2563EB",
+    marginBottom: 15,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 });

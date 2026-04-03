@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { useNavigation, useNavigationState } from "@react-navigation/native";
 import { ChevronLeft, Bell } from "lucide-react-native";
 import { COLORS, SPACING, RADIUS } from "../constants";
+import { useAppTheme } from "../context/ThemeContext";
 
 export default function Header({
   variant = "default", // "default" | "home" | "main"
@@ -18,6 +19,7 @@ export default function Header({
   const navigation = useNavigation();
   const routesLength = useNavigationState((state) => state.routes.length);
   const shouldShowBack = showBack === "auto" ? routesLength > 1 : showBack;
+  const { colors } = useAppTheme();
 
   /* ================= HOME HEADER ================= */
   if (variant === "home") {
@@ -112,12 +114,14 @@ export default function Header({
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: SPACING.md,
-        backgroundColor: backgroundColor || COLORS.headerLight,
+        backgroundColor: backgroundColor || colors.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
       }}
     >
       {shouldShowBack ? (
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeft size={24} color={textColor || COLORS.textPrimary} />
+          <ChevronLeft size={24} color={textColor || colors.text} />
         </TouchableOpacity>
       ) : (
         <View style={{ width: 24 }} />
@@ -129,7 +133,7 @@ export default function Header({
           textAlign: "center",
           fontSize: 18,
           fontWeight: "600",
-          color: textColor || COLORS.textPrimary,
+          color: textColor || colors.text,
         }}
       >
         {title}

@@ -93,8 +93,8 @@ export default function AddAddressScreen({ navigation }) {
           onChangeText={setAddress}
         />
 
-        <View style={{ flexDirection: "row", gap: 15 }}>
-          <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: "row" }}>
+          <View style={{ flex: 1, marginRight: 8 }}>
             <Text style={styles.label}>Area</Text>
             <TextInput
               style={styles.inputSingle}
@@ -103,7 +103,7 @@ export default function AddAddressScreen({ navigation }) {
               onChangeText={setArea}
             />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, marginLeft: 8 }}>
             <Text style={styles.label}>Pincode</Text>
             <TextInput
               style={styles.inputSingle}

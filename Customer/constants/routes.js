@@ -20,7 +20,10 @@ export const ROUTES = {
   RAISE_TICKET: "RaiseTicket",
   SETTINGS: "Settings",
   COMING_SOON: "ComingSoon",
-
+  EDIT_PROFILE: "EditProfile",
+  MANAGE_ADDRESSES: "ManageAddresses",
+  ACCOUNT_SETTINGS: "AccountSettings",
+  
   // Collector
   COLLECTOR_DASHBOARD: "CollectorDashboard",
   PICKUP_DETAILS: "PickupDetails",

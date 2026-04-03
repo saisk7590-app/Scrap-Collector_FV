@@ -6,12 +6,44 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
+  Modal,
+  FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Plus, Minus, ArrowLeft } from "lucide-react-native";
+import { Plus, Minus, ArrowLeft, Search, X } from "lucide-react-native";
+import { apiRequest } from "../../src/lib/api";
 
 export default function PickupActionScreen({ navigation, route }) {
   const pickup = route?.params?.pickup;
+  
+  const [allScrapItems, setAllScrapItems] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showItemModal, setShowItemModal] = useState(false);
+  const [fetchingItems, setFetchingItems] = useState(false);
+
+  // ===== FETCH ALL ITEMS FOR ADDITION =====
+  const fetchAllItems = async () => {
+    try {
+      setFetchingItems(true);
+      const res = await apiRequest("/data/items");
+      if (res.scrapConfig) {
+        const itemArray = Object.keys(res.scrapConfig).map(name => ({
+          name,
+          ...res.scrapConfig[name]
+        }));
+        setAllScrapItems(itemArray);
+      }
+    } catch (err) {
+      console.log("Error fetching items:", err);
+    } finally {
+      setFetchingItems(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchAllItems();
+  }, []);
 
   if (!pickup) {
     return (
@@ -30,6 +62,9 @@ export default function PickupActionScreen({ navigation, route }) {
       : [];
 
     return list.map((item) => ({
+      pickupItemId: item.pickupItemId || item.pickup_item_id || null,
+      itemId: item.itemId || item.item_id || null,
+      categoryId: item.categoryId || item.category_id || null,
       category: item.name,
       price: item.price || 0,
       expectedWeight: item.weight || item.quantity || 0,
@@ -61,21 +96,30 @@ export default function PickupActionScreen({ navigation, route }) {
   const updateCategory = (index, value) => {
     const updated = [...items];
     updated[index].category = value;
+    updated[index].categoryId = null;
     setItems(updated);
   };
 
-  const addItem = () => {
+  const onSelectItem = (item) => {
     setItems([
       ...items,
       {
-        category: "New Item",
-        price: 0,
+        pickupItemId: null,
+        itemId: item.id || null,
+        categoryId: item.category_id || null,
+        category: item.name,
+        price: item.price || 0,
         expectedWeight: 0,
         actualWeight: 0,
-        pricingType: "weight",
+        pricingType: item.type === 'quantity' ? 'quantity' : 'weight',
       },
     ]);
+    setShowItemModal(false);
   };
+
+  const filteredItems = allScrapItems.filter(i => 
+    i.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // ===== TOTALS =====
   const customerTotal = items.reduce(
@@ -99,12 +143,63 @@ export default function PickupActionScreen({ navigation, route }) {
         <View style={{ width: 22 }} />
       </View>
 
+      {/* ITEM SELECTION MODAL */}
+      <Modal
+        visible={showItemModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowItemModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Item to Add</Text>
+              <TouchableOpacity onPress={() => setShowItemModal(false)}>
+                <X size={24} color="#374151" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.searchBar}>
+              <Search size={20} color="#9CA3AF" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search items..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+
+            {fetchingItems ? (
+              <ActivityIndicator size="large" color="#2563EB" style={{ marginTop: 20 }} />
+            ) : (
+              <FlatList
+                data={filteredItems}
+                keyExtractor={(item) => item.name}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={styles.itemOption}
+                    onPress={() => onSelectItem(item)}
+                  >
+                    <View>
+                      <Text style={styles.itemName}>{item.name}</Text>
+                      <Text style={styles.itemMeta}>Price: ₹{item.price} / {item.type === 'weight' ? 'kg' : 'unit'}</Text>
+                    </View>
+                    <Plus size={20} color="#2563EB" />
+                  </TouchableOpacity>
+                )}
+                contentContainerStyle={{ paddingBottom: 20 }}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* CUSTOMER */}
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>Customer</Text>
           <Text style={styles.infoValue}>
-            {pickup.customerName}
+            {pickup.customer_name || pickup.customerName || 'N/A'}
           </Text>
         </View>
 
@@ -130,7 +225,7 @@ export default function PickupActionScreen({ navigation, route }) {
 
           <TouchableOpacity
             style={styles.addBtn}
-            onPress={addItem}
+            onPress={() => setShowItemModal(true)}
           >
             <Plus size={16} color="#fff" />
             <Text style={styles.addBtnText}>Add Item</Text>
@@ -496,5 +591,61 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '80%',
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
+    marginBottom: 20,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#111827',
+  },
+  itemOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  itemName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  itemMeta: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
   },
 });

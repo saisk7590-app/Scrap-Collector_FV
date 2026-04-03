@@ -20,7 +20,7 @@ export default function InvoiceScreen() {
   const route = useRoute();
 
   // ✅ Accepting data exactly as sent from PickupActionScreen
-  const { pickup, items = [], totalAmount = 0 } = route.params || {};
+  const { pickup, items = [], remarks = "", totalAmount = 0 } = route.params || {};
 
   // If no pickup is sent, show fallback
   if (!pickup) {
@@ -54,7 +54,7 @@ export default function InvoiceScreen() {
       if (data.profile) {
         setCollector({
           name: data.profile.fullName || "Collector",
-          id: `COL-${data.profile.id.slice(0, 6).toUpperCase()}`,
+          id: `COL-${String(data.profile.id).slice(0, 6).toUpperCase()}`,
         });
       }
     } catch (err) {
@@ -67,7 +67,16 @@ export default function InvoiceScreen() {
     try {
       await apiRequest(`/pickups/${pickup.id}/status`, "PUT", {
         status: "completed",
-        amount: totalAmount,
+        remarks: remarks || "Completed successfully",
+        finalItems: items.map(item => ({
+             pickup_item_id: item.pickupItemId || item.pickup_item_id || null,
+             item_id: item.itemId || item.item_id || null,
+             collector_category_id: item.categoryId || item.category_id || null,
+             collector_weight: item.actualWeight || 0,
+             price: item.price || 0,
+             is_modified: item.actualWeight !== item.expectedWeight || item.category !== item.originalCategory,
+             remarks: item.remarks || ""
+        }))
       });
 
       Alert.alert("Success", "Pickup completed & invoice saved");

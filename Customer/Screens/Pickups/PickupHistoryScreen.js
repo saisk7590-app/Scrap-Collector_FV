@@ -103,7 +103,10 @@ export default function PickupHistoryScreen({ navigation }) {
               <View style={styles.row}>
                 <View style={styles.rowItem}>
                   <Calendar size={14} color="#6B7280" />
-                  <Text style={styles.rowText}>{new Date(pickup.created_at).toLocaleDateString()}</Text>
+                  <Text style={styles.rowText}>
+                    {pickup.pickup_date ? new Date(pickup.pickup_date).toLocaleDateString() : 
+                     (pickup.created_at ? new Date(pickup.created_at).toLocaleDateString() : 'N/A')}
+                  </Text>
                 </View>
 
                 <View style={styles.rowItem}>

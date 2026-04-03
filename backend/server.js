@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const path = require("path");
 const env = require("./src/config/env");
 const routes = require("./src/routes");
 const errorMiddleware = require("./src/middlewares/errorMiddleware");
@@ -36,6 +37,9 @@ app.use(cors(corsOptions));
 
 // ✅ PARSE JSON
 app.use(express.json());
+
+// ✅ STATIC FILES
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ✅ ROUTES
 app.use("/api", routes);

@@ -29,6 +29,7 @@ CREATE TABLE profiles (
   full_name VARCHAR(255) NOT NULL,
   phone VARCHAR(20),
   alternate_phone VARCHAR(20),
+  profile_image_url TEXT,
   wallet_balance DECIMAL(10,2) DEFAULT 0.00,
   address TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -113,6 +114,26 @@ CREATE TABLE user_addresses (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 10A. WALLET TRANSACTIONS
+CREATE TABLE wallet_transactions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount DECIMAL(10,2) NOT NULL,
+  type VARCHAR(20) NOT NULL CHECK (type IN ('CREDIT', 'DEBIT')),
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO wallet_transactions (user_id, amount, type, description)
+SELECT p.user_id, p.wallet_balance, 'CREDIT', 'Initial balance'
+FROM profiles p
+WHERE p.wallet_balance > 0
+  AND NOT EXISTS (
+    SELECT 1
+    FROM wallet_transactions wt
+    WHERE wt.user_id = p.user_id
+  );
 
 -- 10. CUSTOMERS
 CREATE TABLE customers (

@@ -74,7 +74,14 @@ export default function ManageAddressScreen({ navigation }) {
                     <Text style={styles.defaultBadge}>Default</Text>
                   )}
                 </View>
-                <Text style={styles.address}>{item.address}</Text>
+                <Text style={styles.address}>
+                  {item.house_no ? `${item.house_no}, ` : ''}
+                  {item.address}
+                </Text>
+                <Text style={styles.areaText}>
+                  {item.area ? `${item.area}, ` : ''}
+                  {item.pincode ? `PIN: ${item.pincode}` : ''}
+                </Text>
               </View>
 
               <IconButton
@@ -140,5 +147,10 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 16,
     right: 16,
+  },
+  areaText: {
+    fontSize: 12,
+    color: THEME.textSecondary,
+    marginTop: 1,
   },
 });

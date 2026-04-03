@@ -1,84 +1,111 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { THEME } from "../constants/theme";
-import { ChevronRight, ChevronDown } from "lucide-react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ChevronDown, ChevronRight } from "lucide-react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useAppTheme } from "../context/ThemeContext";
 
 export default function OptionItem({
   title,
+  subtitle,
   icon,
-  iconType = "lucide", // "lucide" or "ionicons"
+  iconType = "lucide",
   onPress,
   expandable = false,
   expanded = false,
   children,
   danger = false,
+  iconColor,
+  hideChevron = false,
 }) {
+  const { colors } = useAppTheme();
+  const styles = getStyles(colors);
+  const resolvedIconColor = iconColor || (danger ? colors.danger : colors.icon);
+
   return (
     <View>
       <TouchableOpacity
-        style={[styles.row, danger && { backgroundColor: THEME.dangerBg }]}
+        style={[styles.row, danger && { backgroundColor: colors.dangerSoft }]}
         onPress={onPress}
-        activeOpacity={0.7}
+        activeOpacity={0.75}
       >
         <View style={styles.left}>
           <View
             style={[
               styles.iconCircle,
-              danger && { backgroundColor: THEME.dangerBg },
+              {
+                backgroundColor: danger ? colors.dangerSoft : colors.surfaceAlt,
+              },
             ]}
           >
             {iconType === "lucide"
-              ? React.cloneElement(icon, {
-                  size: 18,
-                  color: danger ? THEME.danger : THEME.primary,
-                })
-              : <Ionicons name={icon} size={18} color={danger ? THEME.danger : THEME.primary} />}
+              ? React.cloneElement(icon, { size: 18, color: resolvedIconColor })
+              : <Ionicons name={icon} size={18} color={resolvedIconColor} />}
           </View>
 
-          <Text style={[styles.text, danger && { color: THEME.danger }]}>
-            {title}
-          </Text>
+          <View style={styles.textWrap}>
+            <Text style={[styles.text, danger && { color: colors.danger }]}>{title}</Text>
+            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          </View>
         </View>
 
-        {expandable ? (
+        {hideChevron ? null : expandable ? (
           expanded ? (
-            <ChevronDown size={20} color={THEME.primary} />
+            <ChevronDown size={20} color={resolvedIconColor} />
           ) : (
-            <ChevronRight size={20} color={THEME.primary} />
+            <ChevronRight size={20} color={resolvedIconColor} />
           )
         ) : (
-          <ChevronRight
-            size={20}
-            color={danger ? THEME.danger : THEME.primary}
-          />
+          <ChevronRight size={20} color={resolvedIconColor} />
         )}
       </TouchableOpacity>
 
-      {expanded && <View style={styles.subContainer}>{children}</View>}
+      {expanded ? <View style={styles.subContainer}>{children}</View> : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: THEME.rowBackground,
-    padding: THEME.padding,
-    borderRadius: THEME.borderRadius,
-    marginBottom: 14,
-  },
-  left: { flexDirection: "row", alignItems: "center", gap: 12 },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: THEME.iconCircle,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  text: { fontSize: 16, fontWeight: "500", color: THEME.textMain },
-  subContainer: { marginLeft: 52, marginTop: 8 },
-});
+const getStyles = (colors) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+      borderRadius: 16,
+      marginBottom: 12,
+    },
+    left: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      flex: 1,
+      paddingRight: 12,
+    },
+    iconCircle: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    textWrap: {
+      flex: 1,
+    },
+    text: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: colors.text,
+    },
+    subtitle: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    subContainer: {
+      marginLeft: 18,
+      marginBottom: 4,
+    },
+  });

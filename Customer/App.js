@@ -1,11 +1,11 @@
 import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import { DarkTheme, DefaultTheme, NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { View, ActivityIndicator } from "react-native";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ThemeProvider, useAppTheme } from "./context/ThemeContext";
 
 // ================= AUTH SCREENS =================
 import SplashScreen from "./Screens/Auth/SplashScreen";
@@ -57,13 +57,27 @@ const Stack = createNativeStackNavigator();
 
 function NavigationWrapper() {
   const { isAuthenticated, isLoading, userRole } = useAuth();
+  const { colors, themeMode, themeReady } = useAppTheme();
 
-  if (isLoading) {
+  if (isLoading || !themeReady) {
     return <SplashScreen />;
   }
 
+  const navigationTheme = {
+    ...(themeMode === "dark" ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(themeMode === "dark" ? DarkTheme.colors : DefaultTheme.colors),
+      background: colors.background,
+      card: colors.surface,
+      text: colors.text,
+      border: colors.border,
+      primary: colors.primary,
+      notification: colors.primary,
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
 
         {!isAuthenticated ? (
@@ -129,9 +143,11 @@ function NavigationWrapper() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationWrapper />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <NavigationWrapper />
+        </AuthProvider>
+      </ThemeProvider>
       <Toast />
     </SafeAreaProvider>
   );
