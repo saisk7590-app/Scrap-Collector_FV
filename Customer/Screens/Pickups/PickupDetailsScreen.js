@@ -155,34 +155,40 @@ export default function PickupDetailsScreen({ navigation, route }) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Requested Items</Text>
 
-          {itemsList.map((item, index) => (
-            <View key={index} style={styles.itemRow}>
-              <View style={styles.itemLeft}>
-                <Package size={18} color="#2563EB" />
-                <View>
-                  <Text style={styles.itemText}>{item.name}</Text>
-                  <Text style={{ fontSize: 11, color: '#6B7280' }}>
-                    ₹{item.price || 0} / {item.type === 'weight' ? 'kg' : 'unit'}
+          {itemsList.map((item, index) => {
+            const price = parseFloat(item.price) || 0;
+            const measure = item.weight || item.quantity || 0;
+            const amount = measure * price;
+
+            return (
+              <View key={index} style={styles.itemRow}>
+                <View style={styles.itemLeft}>
+                  <Package size={18} color="#2563EB" />
+                  <View>
+                    <Text style={styles.itemText}>{item.name}</Text>
+                    <Text style={{ fontSize: 11, color: '#6B7280' }}>
+                      ₹{price.toFixed(2)} / {item.type === 'weight' ? 'kg' : 'unit'}
+                    </Text>
+                  </View>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.qty}>
+                    {item.type === 'weight' 
+                      ? `${measure} kg` 
+                      : `${measure} unit(s)`}
+                  </Text>
+                  <Text style={{ fontWeight: '600', color: '#111827' }}>
+                    ₹{amount.toFixed(2)}
                   </Text>
                 </View>
               </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.qty}>
-                  {item.type === 'weight' 
-                    ? `${item.weight} kg` 
-                    : `${item.quantity} unit(s)`}
-                </Text>
-                <Text style={{ fontWeight: '600', color: '#111827' }}>
-                  ₹{((item.weight || item.quantity || 0) * (item.price || 0)).toFixed(2)}
-                </Text>
-              </View>
-            </View>
-          ))}
+            );
+          })}
 
           <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderColor: '#F3F4F6', flexDirection: 'row', justifyContent: 'space-between' }}>
             <Text style={{ fontWeight: '700', color: '#111827' }}>Estimated Total</Text>
             <Text style={{ fontWeight: '700', color: '#2563EB' }}>
-              ₹{itemsList.reduce((sum, i) => sum + (i.weight || i.quantity || 0) * (i.price || 0), 0).toFixed(2)}
+              ₹{itemsList.reduce((sum, item) => sum + (parseFloat(item.weight || item.quantity || 0) * parseFloat(item.price || 0)), 0).toFixed(2)}
             </Text>
           </View>
         </View>

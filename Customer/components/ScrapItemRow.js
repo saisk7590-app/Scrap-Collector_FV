@@ -1,17 +1,53 @@
 import React from "react";
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+} from "react-native";
 import { Plus, Minus } from "lucide-react-native";
 import { COLORS } from "../constants/colors";
+import { getItemImage } from "../utils/assetHelpers";
 
-export default function ScrapItemRow({ item, config, data, onQtyChange, onWeightChange, onToggle }) {
-  const isSelected = data[item].selected;
+export default function ScrapItemRow({
+  item,        // now item is OBJECT { name, image }
+  config,
+  data,
+  onQtyChange,
+  onWeightChange,
+  onToggle,
+}) {
+  const name = item.name;
+  const isSelected = data[name]?.selected;
 
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 8, borderBottomWidth: 1, borderColor: COLORS.border }}>
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderColor: COLORS.border,
+      }}
+    >
+      {/* LEFT SIDE (Image + Checkbox + Name) */}
       <TouchableOpacity
         style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
-        onPress={() => onToggle(item)}
+        onPress={() => onToggle(name)}
       >
+        {/* ✅ ITEM IMAGE */}
+        <Image
+          source={getItemImage(item.image, item.category_name)}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 8,
+            marginRight: 8,
+          }}
+        />
+
+        {/* Checkbox */}
         <View
           style={{
             width: 20,
@@ -20,50 +56,133 @@ export default function ScrapItemRow({ item, config, data, onQtyChange, onWeight
             borderColor: COLORS.textSecondary,
             marginRight: 8,
             backgroundColor: isSelected ? COLORS.primary : "transparent",
+            borderRadius: 4,
           }}
         />
+
+        {/* Name + Price */}
         <View style={{ flex: 1 }}>
-          <Text style={{ color: COLORS.textPrimary, fontWeight: "500" }}>{item}</Text>
-          <Text style={{ fontSize: 12, color: COLORS.textSecondary }}>₹{config[item]?.price || 0} / {config[item]?.type === "weight" ? "kg" : "unit"}</Text>
+          <Text
+            style={{
+              color: COLORS.textPrimary,
+              fontWeight: "500",
+            }}
+          >
+            {name}
+          </Text>
+
+          <Text
+            style={{
+              fontSize: 12,
+              color: COLORS.textSecondary,
+            }}
+          >
+            ₹{config[name]?.price || 0} /{" "}
+            {config[name]?.type === "weight" ? "kg" : "unit"}
+          </Text>
         </View>
       </TouchableOpacity>
 
-      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "flex-end" }}>
-        {config[item]?.hasQuantity && (
-          <View style={{ flexDirection: "row", alignItems: "center", width: 110, justifyContent: "center" }}>
-            <TouchableOpacity 
-              onPress={() => onQtyChange(item, -1)} 
-              style={{ width: 32, height: 32, justifyContent: "center", alignItems: "center", borderRadius: 6, backgroundColor: "#F3F4F6" }}
+      {/* RIGHT SIDE (Controls) */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "flex-end",
+        }}
+      >
+        {/* QUANTITY */}
+        {config[name]?.hasQuantity && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              width: 110,
+              justifyContent: "center",
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => onQtyChange(name, -1)}
+              style={{
+                width: 32,
+                height: 32,
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: 6,
+                backgroundColor: "#F3F4F6",
+              }}
             >
               <Minus size={16} />
             </TouchableOpacity>
 
             <TextInput
-              style={{ width: 40, height: 36, borderWidth: 1, borderColor: "#D1D5DB", textAlign: "center", marginHorizontal: 4, borderRadius: 6 }}
+              style={{
+                width: 40,
+                height: 36,
+                borderWidth: 1,
+                borderColor: "#D1D5DB",
+                textAlign: "center",
+                marginHorizontal: 4,
+                borderRadius: 6,
+              }}
               keyboardType="numeric"
-              value={String(data[item].quantity || 0)}
-              onChangeText={(t) => onQtyChange(item, (parseInt(t) || 0) - (data[item].quantity || 0))}
+              value={String(data[name]?.quantity || 0)}
+              onChangeText={(t) =>
+                onQtyChange(
+                  name,
+                  (parseInt(t) || 0) - (data[name]?.quantity || 0)
+                )
+              }
             />
 
-            <TouchableOpacity 
-              onPress={() => onQtyChange(item, 1)} 
-              style={{ width: 32, height: 32, justifyContent: "center", alignItems: "center", borderRadius: 6, backgroundColor: "#F3F4F6" }}
+            <TouchableOpacity
+              onPress={() => onQtyChange(name, 1)}
+              style={{
+                width: 32,
+                height: 32,
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: 6,
+                backgroundColor: "#F3F4F6",
+              }}
             >
               <Plus size={16} />
             </TouchableOpacity>
           </View>
         )}
 
-        {config[item]?.hasWeight && (
-          <View style={{ flexDirection: "row", alignItems: "center", marginLeft: config[item]?.hasQuantity ? 10 : 0 }}>
+        {/* WEIGHT */}
+        {config[name]?.hasWeight && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginLeft: config[name]?.hasQuantity ? 10 : 0,
+            }}
+          >
             <TextInput
-              style={{ width: 60, height: 36, borderWidth: 1, borderColor: "#D1D5DB", textAlign: "center", borderRadius: 6 }}
+              style={{
+                width: 60,
+                height: 36,
+                borderWidth: 1,
+                borderColor: "#D1D5DB",
+                textAlign: "center",
+                borderRadius: 6,
+              }}
               keyboardType="decimal-pad"
               placeholder="0.00"
-              value={data[item].weight}
-              onChangeText={(t) => onWeightChange(item, t)}
+              value={data[name]?.weight}
+              onChangeText={(t) => onWeightChange(name, t)}
             />
-            <Text style={{ marginLeft: 4, fontSize: 13, color: COLORS.textSecondary }}>kg</Text>
+            <Text
+              style={{
+                marginLeft: 4,
+                fontSize: 13,
+                color: COLORS.textSecondary,
+              }}
+            >
+              kg
+            </Text>
           </View>
         )}
       </View>

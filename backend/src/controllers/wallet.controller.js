@@ -20,11 +20,11 @@ const ensureLegacyWalletTransaction = async (client, userId, balance) => {
     }
 
     await client.query(
-        `INSERT INTO wallet_transactions (user_id, amount, type, description)
-         SELECT $1, $2, 'CREDIT', 'Initial balance'
+        `INSERT INTO customer_wallet_transactions (user_id, amount, type, description, balance_after)
+         SELECT $1, $2, 'CREDIT', 'Initial balance', $2
          WHERE NOT EXISTS (
              SELECT 1
-             FROM wallet_transactions
+             FROM customer_wallet_transactions
              WHERE user_id = $1
          )`,
         [userId, numericBalance]
@@ -61,8 +61,8 @@ exports.getWalletTransactions = async (req, res, next) => {
         await ensureLegacyWalletTransaction(client, userId, balance);
 
         const txResult = await client.query(
-            `SELECT id, user_id, amount, type, description, created_at
-             FROM wallet_transactions
+            `SELECT id, user_id, amount, type, description, balance_after, created_at
+             FROM customer_wallet_transactions
              WHERE user_id = $1
              ORDER BY created_at DESC, id DESC`,
             [userId]
@@ -104,20 +104,22 @@ exports.withdrawFromWallet = async (req, res, next) => {
 
         await ensureLegacyWalletTransaction(client, userId, currentBalance);
 
+        const newBalance = Number((currentBalance - amount).toFixed(2));
+
         const balanceResult = await client.query(
             `UPDATE profiles
-             SET wallet_balance = wallet_balance - $1,
+             SET wallet_balance = $1,
                  updated_at = NOW()
              WHERE user_id = $2
              RETURNING wallet_balance`,
-            [amount, userId]
+            [newBalance, userId]
         );
 
         const transactionResult = await client.query(
-            `INSERT INTO wallet_transactions (user_id, amount, type, description)
-             VALUES ($1, $2, 'DEBIT', 'Withdrawal')
-             RETURNING id, user_id, amount, type, description, created_at`,
-            [userId, amount]
+            `INSERT INTO customer_wallet_transactions (user_id, amount, type, description, balance_after)
+             VALUES ($1, $2, 'DEBIT', 'Withdrawal', $3)
+             RETURNING id, user_id, amount, type, description, balance_after, created_at`,
+            [userId, amount, newBalance]
         );
 
         await client.query('COMMIT');
@@ -184,25 +186,39 @@ exports.addFunds = async (req, res, next) => {
 
         await client.query('BEGIN');
 
+        // Lock profile for update
+        const currentBalanceResult = await client.query(
+            'SELECT wallet_balance FROM profiles WHERE user_id = $1 FOR UPDATE',
+            [collectorId]
+        );
+        
+        if (currentBalanceResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return ApiResponse.error(res, 'Collector profile not found', 404);
+        }
+
+        const currentBalance = Number(currentBalanceResult.rows[0].wallet_balance || 0);
+        const newBalance = Number((currentBalance + normalizedAmount).toFixed(2));
+
         const txResult = await client.query(
-            `INSERT INTO collector_wallet_transactions (collector_id, amount, type, description)
-             VALUES ($1, $2, 'CREDIT', $3)
+            `INSERT INTO collector_wallet_transactions (collector_id, amount, type, description, balance_after)
+             VALUES ($1, $2, 'CREDIT', $3, $4)
              RETURNING *`,
-            [collectorId, normalizedAmount, description || 'Funds added by Admin']
+            [collectorId, normalizedAmount, description || 'Funds added by Admin', newBalance]
         );
 
         await client.query(
-            `INSERT INTO wallet_transactions (user_id, amount, type, description)
-             VALUES ($1, $2, 'CREDIT', $3)`,
-            [collectorId, normalizedAmount, description || 'Funds added by Admin']
+            `INSERT INTO customer_wallet_transactions (user_id, amount, type, description, balance_after)
+             VALUES ($1, $2, 'CREDIT', $3, $4)`,
+            [collectorId, normalizedAmount, description || 'Funds added by Admin', newBalance]
         );
 
         await client.query(
             `UPDATE profiles
-             SET wallet_balance = wallet_balance + $1,
+             SET wallet_balance = $1,
                  updated_at = NOW()
              WHERE user_id = $2`,
-            [normalizedAmount, collectorId]
+            [newBalance, collectorId]
         );
 
         await client.query('COMMIT');

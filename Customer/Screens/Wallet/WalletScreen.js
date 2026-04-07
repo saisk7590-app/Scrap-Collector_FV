@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  ScrollView,
+  FlatList,
   StyleSheet,
   Text,
   TextInput,
@@ -57,13 +57,13 @@ export default function WalletScreen() {
 
       if (profileResponse.profile?.walletBalance != null) {
         setWalletBalance(Number(profileResponse.profile.walletBalance));
-      } else if (transactionsResponse.balance != null) {
-        setWalletBalance(Number(transactionsResponse.balance));
+      } else if (transactionsResponse.data?.balance != null) {
+        setWalletBalance(Number(transactionsResponse.data.balance));
       } else {
         setWalletBalance(0);
       }
 
-      setTransactions(transactionsResponse.transactions || []);
+      setTransactions(transactionsResponse.data?.transactions || []);
       setLoadError("");
     } catch (error) {
       setLoadError(error?.message || "Failed to load wallet data");
@@ -94,11 +94,15 @@ export default function WalletScreen() {
 
     try {
       setWithdrawing(true);
-      await apiRequest("/wallet/withdraw", "POST", { amount });
+      const response = await apiRequest("/wallet/withdraw", "POST", { amount });
+      
       setWithdrawAmount("");
       setShowWithdrawInput(false);
+      
+      // Refresh wallet data
       await fetchWallet({ silent: true });
-      Alert.alert("Withdrawal successful", `${currency(amount)} has been deducted from your wallet.`);
+      
+      Alert.alert("Withdrawal successful", `₹${amount.toFixed(2)} has been requested for withdrawal.`);
     } catch (error) {
       Alert.alert("Withdrawal failed", error?.message || "Unable to process withdrawal right now.");
     } finally {
@@ -115,89 +119,105 @@ export default function WalletScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>Available Balance</Text>
-            <Text style={styles.balanceAmount}>{currency(walletBalance)}</Text>
+        <FlatList
+          data={transactions}
+          keyExtractor={(item) => item.id.toString()}
+          ListHeaderComponent={
+            <>
+              <View style={styles.balanceCard}>
+                <Text style={styles.balanceLabel}>Available Balance</Text>
+                <Text style={styles.balanceAmount}>{currency(walletBalance)}</Text>
 
-            {showWithdrawInput ? (
-              <View style={styles.withdrawCard}>
-                <TextInput
-                  placeholder="Enter amount"
-                  keyboardType="decimal-pad"
-                  value={withdrawAmount}
-                  onChangeText={setWithdrawAmount}
-                  style={styles.withdrawInput}
-                  placeholderTextColor={colors.textSoft}
-                  editable={!withdrawing}
-                />
+                {showWithdrawInput ? (
+                  <View style={styles.withdrawCard}>
+                    <TextInput
+                      placeholder="Enter amount"
+                      keyboardType="decimal-pad"
+                      value={withdrawAmount}
+                      onChangeText={setWithdrawAmount}
+                      style={styles.withdrawInput}
+                      placeholderTextColor={colors.textSoft}
+                      editable={!withdrawing}
+                    />
+                  </View>
+                ) : null}
+
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    onPress={() => (showWithdrawInput ? handleWithdraw() : setShowWithdrawInput(true))}
+                    style={[styles.actionButton, withdrawing && styles.actionButtonDisabled]}
+                    disabled={withdrawing}
+                  >
+                    {withdrawing ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <WalletIcon size={18} color={colors.primary} />
+                    )}
+                    <Text style={styles.actionButtonText}>{showWithdrawInput ? "Confirm" : "Withdraw"}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => Alert.alert("Add Bank", "Coming soon")}
+                    style={styles.actionButton}
+                    disabled={withdrawing}
+                  >
+                    <CreditCard size={18} color={colors.primary} />
+                    <Text style={styles.actionButtonText}>Add Bank</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            ) : null}
 
-            <View style={styles.actionRow}>
-              <TouchableOpacity
-                onPress={() => (showWithdrawInput ? handleWithdraw() : setShowWithdrawInput(true))}
-                style={[styles.actionButton, withdrawing && styles.actionButtonDisabled]}
-                disabled={withdrawing}
-              >
-                {withdrawing ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <WalletIcon size={18} color={colors.primary} />
-                )}
-                <Text style={styles.actionButtonText}>{showWithdrawInput ? "Confirm" : "Withdraw"}</Text>
-              </TouchableOpacity>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Recent Transactions</Text>
+                {refreshing ? <ActivityIndicator size="small" color={colors.primary} /> : null}
+              </View>
 
-              <TouchableOpacity
-                onPress={() => Alert.alert("Add Bank", "Coming soon")}
-                style={styles.actionButton}
-                disabled={withdrawing}
-              >
-                <CreditCard size={18} color={colors.primary} />
-                <Text style={styles.actionButtonText}>Add Bank</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            {refreshing ? <ActivityIndicator size="small" color={colors.primary} /> : null}
-          </View>
-
-          {loadError ? <Text style={styles.errorText}>{loadError}</Text> : null}
-
-          {transactions.length === 0 ? (
+              {loadError ? <Text style={styles.errorText}>{loadError}</Text> : null}
+            </>
+          }
+          ListEmptyComponent={
             <View style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>No transactions yet</Text>
               <Text style={styles.emptyText}>Wallet activity will appear here once credits or withdrawals are recorded.</Text>
             </View>
-          ) : (
-            transactions.map((item) => {
-              const isCredit = String(item.type || "").toUpperCase() === "CREDIT";
-              return (
-                <View key={item.id} style={styles.transactionCard}>
-                  <View style={styles.transactionLeft}>
-                    <View style={[styles.transactionIcon, { backgroundColor: isCredit ? colors.primarySoft : colors.dangerSoft }]}>
-                      {isCredit ? (
-                        <ArrowDownLeft size={16} color={colors.primary} />
-                      ) : (
-                        <ArrowUpRight size={16} color={colors.danger} />
-                      )}
-                    </View>
-                    <View style={styles.transactionTextWrap}>
-                      <Text style={styles.transactionTitle}>{item.description || (isCredit ? "Wallet Credit" : "Wallet Debit")}</Text>
-                      <Text style={styles.transactionDate}>{formatDate(item.created_at)}</Text>
-                    </View>
-                  </View>
+          }
+          renderItem={({ item }) => {
+            const isCredit = String(item.type || "").toUpperCase() === "CREDIT";
+            const label = isCredit ? "Added to wallet" : "Withdrawal";
 
-                  <Text style={[styles.transactionAmount, { color: isCredit ? colors.primary : colors.danger }]}>
-                    {isCredit ? `+${RUPEE}` : `-${RUPEE}`}{Number(item.amount || 0).toFixed(2)}
-                  </Text>
+            return (
+              <View style={styles.transactionCard}>
+                <View style={styles.transactionLeft}>
+                  <View style={[styles.transactionIcon, { backgroundColor: isCredit ? colors.primarySoft : colors.dangerSoft }]}>
+                    {isCredit ? (
+                      <ArrowDownLeft size={16} color={colors.primary} />
+                    ) : (
+                      <ArrowUpRight size={16} color={colors.danger} />
+                    )}
+                  </View>
+                  <View style={styles.transactionTextWrap}>
+                    <Text style={styles.transactionTitle}>{label}</Text>
+                    <Text style={styles.transactionDesc} numberOfLines={1}>{item.description}</Text>
+                    <Text style={styles.transactionDate}>{formatDate(item.created_at)}</Text>
+                  </View>
                 </View>
-              );
-            })
-          )}
-        </ScrollView>
+
+                <View style={styles.transactionRight}>
+                  <Text style={[styles.transactionAmount, { color: isCredit ? colors.primary : colors.danger }]}>
+                    {isCredit ? `+${RUPEE}` : `-${RUPEE}${Number(item.amount || 0).toFixed(2)}`}
+                  </Text>
+                  {item.balance_after != null && (
+                    <Text style={styles.runningBalance}>Balance: {currency(item.balance_after)}</Text>
+                  )}
+                </View>
+              </View>
+            );
+          }}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          onRefresh={() => fetchWallet({ silent: true })}
+          refreshing={refreshing}
+        />
       )}
     </SafeAreaView>
   );
@@ -325,17 +345,30 @@ const getStyles = (colors) =>
     },
     transactionTitle: {
       color: colors.text,
-      fontWeight: "600",
+      fontWeight: "700",
       fontSize: 14,
+    },
+    transactionDesc: {
+      color: colors.textSoft,
+      fontSize: 12,
+      marginTop: 2,
     },
     transactionDate: {
       color: colors.textMuted,
-      fontSize: 12,
-      marginTop: 3,
+      fontSize: 11,
+      marginTop: 2,
+    },
+    transactionRight: {
+      alignItems: "flex-end",
     },
     transactionAmount: {
       fontWeight: "700",
-      fontSize: 14,
+      fontSize: 15,
+    },
+    runningBalance: {
+      fontSize: 11,
+      color: colors.textMuted,
+      marginTop: 4,
     },
     errorText: {
       color: colors.danger,

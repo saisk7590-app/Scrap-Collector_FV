@@ -1,9 +1,12 @@
-import { TouchableOpacity, View, Text } from "react-native";
-import { RADIUS, SPACING } from "../constants";
+import React from "react";
+import { View, Text, TouchableOpacity } from "react-native"; // ✅ FIX
+
+import { RADIUS, SPACING, COLORS } from "../constants";
+import { getCategoryIcon } from "../utils/assetHelpers";
 
 export default function CategoryCard({
   title,
-  icon: Icon,
+  icon,     // emoji string
   iconBg,
   cardBg,
   onPress,
@@ -16,24 +19,33 @@ export default function CategoryCard({
         width: "48%",
         padding: SPACING.md,
         borderRadius: RADIUS.xl,
-        backgroundColor: cardBg,
+        backgroundColor: cardBg || "#FFFFFF",
         marginBottom: SPACING.md,
       }}
     >
+      {/* Emoji Icon */}
       <View
         style={{
           width: 44,
           height: 44,
           borderRadius: RADIUS.md,
-          backgroundColor: iconBg,
+          backgroundColor: iconBg || "#E5E7EB",
           justifyContent: "center",
           alignItems: "center",
           marginBottom: 10,
         }}
       >
-        <Icon color="#fff" size={22} />
+        {getCategoryIcon(icon, 24, COLORS.textPrimary)}
       </View>
-      <Text style={{ fontSize: 14, fontWeight: "500" }}>
+
+      {/* Title */}
+      <Text
+        style={{
+          fontSize: 14,
+          fontWeight: "500",
+          color: COLORS.textPrimary, // ✅ optional improvement
+        }}
+      >
         {title}
       </Text>
     </TouchableOpacity>

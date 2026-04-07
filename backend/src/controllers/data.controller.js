@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 exports.getCategories = async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM scrap_categories ORDER BY created_at ASC');
+    const result = await db.query('SELECT *, icon as icon_name FROM scrap_categories ORDER BY created_at ASC');
     
     // We want the frontend to receive an array named 'categories'
     res.json({ categories: result.rows });
@@ -22,9 +22,11 @@ exports.getScrapItems = async (req, res) => {
         i.measurement_type,
         i.base_price,
         i.category_id,
+        i.image_url as image,
         c.name as category_name,
         c.has_weight,
-        c.has_quantity
+        c.has_quantity,
+        c.icon as category_icon
       FROM scrap_items i
       JOIN scrap_categories c ON i.category_id = c.id
       ORDER BY c.created_at ASC, i.created_at ASC
@@ -43,7 +45,7 @@ exports.getScrapItems = async (req, res) => {
       if (!groupedItems[item.category_name]) {
         groupedItems[item.category_name] = [];
       }
-      groupedItems[item.category_name].push(item.name);
+      groupedItems[item.category_name].push(item); // ✅ Push full item object
       
       // Config mapping (includes measurement type and base price)
       config[item.name] = {

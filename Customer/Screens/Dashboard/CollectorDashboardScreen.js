@@ -28,8 +28,8 @@ export default function CollectorDashboardScreen({ navigation }) {
     todayPickups: 0,
     pending: 0,
     completed: 0,
-    todayEarnings: 0,
   });
+  const [walletBalance, setWalletBalance] = useState(0);
 
   const pollRef = useRef(null);
 
@@ -39,6 +39,7 @@ export default function CollectorDashboardScreen({ navigation }) {
 
     pollRef.current = setInterval(() => {
       fetchTodayPickups();
+      fetchProfile();
     }, POLL_INTERVAL);
 
     return () => {
@@ -60,10 +61,15 @@ export default function CollectorDashboardScreen({ navigation }) {
   const fetchProfile = async () => {
     try {
       const data = await apiRequest("/profile");
-      if (data.profile?.fullName) {
-        setCollectorName(data.profile.fullName);
+      if (data.profile) {
+        console.log("Logged-in User ID:", data.profile.userId || data.profile.id); // 🔥 For debugging manual DB updates
+        if (data.profile.fullName) setCollectorName(data.profile.fullName);
+        // Ensure walletBalance is numeric and extracted correctly
+        const balance = parseFloat(data.profile.walletBalance || data.profile.wallet_balance || 0);
+        setWalletBalance(balance);
       }
-    } catch {
+    } catch (e) {
+      console.log("Profile fetch error:", e);
       const storedUser = await getStoredUser();
       if (storedUser?.fullName) {
         setCollectorName(storedUser.fullName);
@@ -79,22 +85,17 @@ export default function CollectorDashboardScreen({ navigation }) {
       const safeData = data.pickups || [];
 
       const pending = safeData.filter(
-        (p) => p.status === "scheduled"
+        (p) => p.status === "scheduled" || p.status === "in_progress"
       ).length;
 
       const completed = safeData.filter(
         (p) => p.status === "completed"
       ).length;
 
-      const earnings = safeData
-        .filter((p) => p.status === "completed")
-        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
-
       setStats({
         todayPickups: safeData.length,
         pending,
         completed,
-        todayEarnings: earnings,
       });
 
       setTodayPickups(safeData);
@@ -132,7 +133,7 @@ export default function CollectorDashboardScreen({ navigation }) {
             </View>
           </View>
 
-          {/* 🔥 UPDATED HEADER STATS */}
+          {/* 🔥 PRODUCTION HEADER STATS */}
           <View style={styles.headerStats}>
             <View style={styles.statCard}>
               <Clock color="#E0F2FE" size={20} />
@@ -141,7 +142,7 @@ export default function CollectorDashboardScreen({ navigation }) {
                 {stats.todayPickups}
               </Text>
 
-              {/* ✅ NEW 0 / 1 INDICATOR */}
+              {/* ✅ COMPLETED / PENDING INDICATOR */}
               <View style={styles.statusRow}>
                 <Text style={styles.completedText}>
                   {stats.completed}
@@ -155,10 +156,8 @@ export default function CollectorDashboardScreen({ navigation }) {
 
             <View style={styles.statCard}>
               <Wallet color="#E0F2FE" size={20} />
-              <Text style={styles.statLabel}>Today's Earnings</Text>
-              <Text style={styles.statValue}>
-                ₹{stats.todayEarnings}
-              </Text>
+              <Text style={styles.statLabel}>Current Balance</Text>
+              <Text style={styles.statValue}>₹{walletBalance.toFixed(2)}</Text>
             </View>
           </View>
         </View>
@@ -207,9 +206,7 @@ export default function CollectorDashboardScreen({ navigation }) {
                   ]}
                 >
                   <Text style={styles.customerName}>
-                    Pickup ID:{" "}
-                    {pickup.display_id ||
-                      pickup.id.slice(0, 6)}
+                    Pickup ID: {pickup.pickup_no || pickup.id}
                   </Text>
 
                   <Text style={styles.subText}>
@@ -233,7 +230,7 @@ export default function CollectorDashboardScreen({ navigation }) {
                         : styles.completedBadge
                     }
                   >
-                    {pickup.status?.toUpperCase()}
+                    {pickup.status?.toUpperCase().replace('_', ' ')}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -245,7 +242,6 @@ export default function CollectorDashboardScreen({ navigation }) {
   );
 }
 
-/* STYLES */
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#2563EB" },
   container: { flex: 1, backgroundColor: "#F9FAFB" },
@@ -264,15 +260,12 @@ const styles = StyleSheet.create({
   },
 
   welcome: { color: "#DBEAFE", fontSize: 14 },
-
   username: {
     color: "#fff",
     fontSize: 20,
     fontWeight: "700",
   },
-
   headerIcons: { flexDirection: "row", gap: 10 },
-
   iconCircle: {
     width: 40,
     height: 40,
@@ -283,52 +276,44 @@ const styles = StyleSheet.create({
   },
 
   headerStats: { flexDirection: "row", gap: 12 },
-
   statCard: {
     flex: 1,
     backgroundColor: "rgba(255,255,255,0.15)",
     padding: 14,
     borderRadius: 14,
   },
-
   statLabel: {
     color: "#DBEAFE",
     fontSize: 12,
     marginTop: 6,
   },
-
   statValue: {
     color: "#fff",
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "700",
   },
 
-  /* 🔥 NEW STATUS UI */
   statusRow: {
     flexDirection: "row",
     marginTop: 6,
     alignItems: "center",
   },
-
   completedText: {
     color: "#22C55E",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "700",
   },
-
   pendingText: {
     color: "#EF4444",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "700",
   },
-
   separator: {
     color: "#E0F2FE",
     marginHorizontal: 4,
   },
 
   content: { padding: 20 },
-
   secondaryButton: {
     backgroundColor: "#E0E7FF",
     height: 52,
@@ -339,20 +324,17 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 24,
   },
-
   secondaryButtonText: {
     color: "#2563EB",
     fontSize: 16,
     fontWeight: "600",
   },
-
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
     color: "#111827",
   },
-
   scheduleCard: {
     backgroundColor: "#fff",
     padding: 16,
@@ -360,35 +342,29 @@ const styles = StyleSheet.create({
     borderLeftWidth: 5,
     marginBottom: 12,
   },
-
   customerName: {
     fontSize: 16,
     fontWeight: "600",
     color: "#111827",
   },
-
   subText: {
     color: "#6B7280",
     marginTop: 4,
   },
-
   timeText: {
     color: "#9CA3AF",
     marginTop: 4,
   },
-
   pendingBadge: {
     marginTop: 6,
     color: "#F97316",
     fontWeight: "700",
   },
-
   completedBadge: {
     marginTop: 6,
     color: "#22C55E",
     fontWeight: "700",
   },
-
   emptyText: {
     textAlign: "center",
     marginTop: 20,

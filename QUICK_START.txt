@@ -50,3 +50,28 @@ FIX: Log out of the app on your phone and Log In again. This refreshes the secur
 - ERROR: "Visit Site" warning page
 FIX: If your phone shows a blue ngrok warning page, you MUST click the "Visit Site" button, otherwise the app won't work.
 ------------------------------------------------
+
+STEP 6: MANUAL ADMIN ACTIONS (Wallet Top-up)
+--------------------------------------------
+If a Collector needs more money to pay customers, use this single SQL in your Database:
+
+-- 1. Find the user_id (e.g. 5)
+-- 2. Run this to add ₹2000 to their wallet:
+
+UPDATE profiles 
+SET wallet_balance = wallet_balance + 2000 
+WHERE user_id = 5;
+
+*Success! The transaction history is automatically recorded by our Database Trigger.*
+------------------------------------------------
+
+STEP 7: BULK IMAGE UPDATES (50+ Items 🖼️)
+--------------------------------------------
+Reference the full guide here: e:\Sai Kiran\Scrap_Collector_FV\Image_Update_Guide.md
+
+1. Save images to: backend/uploads/items/[CATEGORY]/
+2. Run this to find items missing images:
+   SELECT name FROM scrap_items WHERE image_url IS NULL;
+3. Update them:
+   UPDATE scrap_items SET image_url = 'PAPER/filename.png' WHERE name = '...';
+------------------------------------------------

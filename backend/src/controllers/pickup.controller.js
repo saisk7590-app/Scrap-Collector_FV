@@ -340,28 +340,61 @@ exports.updatePickupStatus = async (req, res, next) => {
 
             // Wallet Ledger Logic
             // Debit money from collector wallet
+            const pickupUserIdResult = await client.query('SELECT user_id FROM pickups WHERE id = $1', [id]);
+            if (pickupUserIdResult.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return ApiResponse.error(res, "Pickup user not found", 404);
+            }
+            const customerUserId = pickupUserIdResult.rows[0].user_id;
+
+            // Lock profiles in a consistent order to prevent deadlocks (lower ID first)
+            const firstId = Math.min(collectorId, customerUserId);
+            const secondId = Math.max(collectorId, customerUserId);
+
+            await client.query('SELECT wallet_balance FROM profiles WHERE user_id = $1 FOR UPDATE', [firstId]);
+            if (firstId !== secondId) {
+                await client.query('SELECT wallet_balance FROM profiles WHERE user_id = $1 FOR UPDATE', [secondId]);
+            }
+
+            // Get Current Balances
+            const collectorProfileResult = await client.query('SELECT wallet_balance FROM profiles WHERE user_id = $1', [collectorId]);
+            const customerProfileResult = await client.query('SELECT wallet_balance FROM profiles WHERE user_id = $1', [customerUserId]);
+
+            const collectorBalance = Number(collectorProfileResult.rows[0].wallet_balance || 0);
+            const customerBalance = Number(customerProfileResult.rows[0].wallet_balance || 0);
+
+            // ✅ Production Check: Prevent negative balance
+            if (collectorBalance < finalAmount) {
+                await client.query('ROLLBACK');
+                return ApiResponse.error(res, `Insufficient wallet balance. You need ₹${finalAmount} but have ₹${collectorBalance}.`, 400);
+            }
+
+            const newCollectorBalance = Number((collectorBalance - finalAmount).toFixed(2));
+            const newCustomerBalance = Number((customerBalance + finalAmount).toFixed(2));
+
+            // 1. Update Collector Transactions & Profile
             await client.query(
-                `INSERT INTO collector_wallet_transactions (collector_id, amount, type, description, reference_id)
-                 VALUES ($1, $2, 'DEBIT', $3, $4)`,
-                [collectorId, finalAmount, `Paid to customer for Pickup PK${String(id).padStart(6, '0')}`, id]
+                `INSERT INTO collector_wallet_transactions (collector_id, amount, type, description, reference_id, balance_after)
+                 VALUES ($1, $2, 'DEBIT', $3, $4, $5)`,
+                [collectorId, finalAmount, `Paid to customer for Pickup PK${String(id).padStart(6, '0')}`, id, newCollectorBalance]
             );
 
-            // Update user wallet balance safely using subquery or direct profile check
-            const pickupUserIdResult = await client.query('SELECT user_id FROM pickups WHERE id = $1', [id]);
-            if (pickupUserIdResult.rows.length > 0) {
-                const customerUserId = pickupUserIdResult.rows[0].user_id;
+            await client.query(
+                'UPDATE profiles SET wallet_balance = $1, updated_at = NOW() WHERE user_id = $2',
+                [newCollectorBalance, collectorId]
+            );
 
-                await client.query(
-                    'UPDATE profiles SET wallet_balance = wallet_balance + $1, updated_at = NOW() WHERE user_id = $2',
-                    [finalAmount, customerUserId]
-                );
+            // 2. Update Customer Transactions & Profile
+            await client.query(
+                `INSERT INTO customer_wallet_transactions (user_id, amount, type, description, balance_after)
+                 VALUES ($1, $2, 'CREDIT', $3, $4)`,
+                [customerUserId, finalAmount, `Pickup completed for PK${String(id).padStart(6, '0')}`, newCustomerBalance]
+            );
 
-                await client.query(
-                    `INSERT INTO wallet_transactions (user_id, amount, type, description)
-                     VALUES ($1, $2, 'CREDIT', $3)`,
-                    [customerUserId, finalAmount, `Pickup completed for PK${String(id).padStart(6, '0')}`]
-                );
-            }
+            await client.query(
+                'UPDATE profiles SET wallet_balance = $1, updated_at = NOW() WHERE user_id = $2',
+                [newCustomerBalance, customerUserId]
+            );
         }
 
         // Update the pickup record

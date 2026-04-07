@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -41,20 +41,14 @@ export default function PickupActionScreen({ navigation, route }) {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchAllItems();
   }, []);
 
-  if (!pickup) {
-    return (
-      <View style={styles.center}>
-        <Text>Pickup data not found</Text>
-      </View>
-    );
-  }
-
   // ===== INITIAL ITEMS =====
-  const initialItems = React.useMemo(() => {
+  const initialItems = useMemo(() => {
+    if (!pickup?.items) return [];
+
     const list = Array.isArray(pickup.items)
       ? pickup.items
       : typeof pickup.items === "string"
@@ -66,16 +60,24 @@ export default function PickupActionScreen({ navigation, route }) {
       itemId: item.itemId || item.item_id || null,
       categoryId: item.categoryId || item.category_id || null,
       category: item.name,
-      price: item.price || 0,
-      expectedWeight: item.weight || item.quantity || 0,
-      actualWeight: item.weight || item.quantity || 0,
+      price: parseFloat(item.price) || 0,
+      expectedWeight: parseFloat(item.weight || item.quantity || 0),
+      actualWeight: parseFloat(item.weight || item.quantity || 0),
       pricingType:
-        item.type || (item.weight > 0 ? "weight" : "quantity"),
+        item.type || item.measurement_type || (parseFloat(item.weight) > 0 ? "weight" : "quantity"),
     }));
   }, [pickup]);
 
   const [items, setItems] = useState(initialItems);
   const [remarks, setRemarks] = useState("");
+
+  if (!pickup) {
+    return (
+      <View style={styles.center}>
+        <Text>Pickup data not found</Text>
+      </View>
+    );
+  }
 
   // ===== UPDATE FUNCTIONS =====
   const updateWeight = (index, change) => {
@@ -108,7 +110,7 @@ export default function PickupActionScreen({ navigation, route }) {
         itemId: item.id || null,
         categoryId: item.category_id || null,
         category: item.name,
-        price: item.price || 0,
+        price: parseFloat(item.price) || 0,
         expectedWeight: 0,
         actualWeight: 0,
         pricingType: item.type === 'quantity' ? 'quantity' : 'weight',
@@ -264,7 +266,7 @@ export default function PickupActionScreen({ navigation, route }) {
                     : "unit"}
                 </Text>
                 <Text style={styles.boxAmount}>
-                  ₹{item.expectedWeight * item.price}
+                  ₹{(item.expectedWeight * item.price).toFixed(2)}
                 </Text>
               </View>
 
@@ -314,7 +316,7 @@ export default function PickupActionScreen({ navigation, route }) {
                 </View>
 
                 <Text style={styles.boxAmount}>
-                  ₹{item.actualWeight * item.price}
+                  ₹{(item.actualWeight * item.price).toFixed(2)}
                 </Text>
 
                 <Text style={styles.unitText}>
@@ -334,7 +336,7 @@ export default function PickupActionScreen({ navigation, route }) {
             Customer Expected Total
           </Text>
           <Text style={styles.totalValue}>
-            ₹{customerTotal}
+            ₹{customerTotal.toFixed(2)}
           </Text>
         </View>
 
@@ -343,7 +345,7 @@ export default function PickupActionScreen({ navigation, route }) {
             Collector Calculated Total
           </Text>
           <Text style={styles.totalValue}>
-            ₹{collectorTotal}
+            ₹{collectorTotal.toFixed(2)}
           </Text>
         </View>
 
@@ -353,7 +355,7 @@ export default function PickupActionScreen({ navigation, route }) {
             Final Amount
           </Text>
           <Text style={styles.summaryAmount}>
-            ₹{collectorTotal}
+            ₹{collectorTotal.toFixed(2)}
           </Text>
         </View>
       </ScrollView>
@@ -372,7 +374,7 @@ export default function PickupActionScreen({ navigation, route }) {
             navigation.navigate("Invoice", {
               pickup,
               items,
-              remarks, // ✅ pass remarks
+              remarks,
               totalAmount: collectorTotal,
             })
           }
@@ -386,7 +388,6 @@ export default function PickupActionScreen({ navigation, route }) {
   );
 }
 
-/* ===== STYLES ===== */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f9fafb" },
   scroll: { padding: 20, paddingBottom: 120 },

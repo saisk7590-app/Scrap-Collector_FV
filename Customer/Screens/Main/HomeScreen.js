@@ -2,7 +2,6 @@ import React, { useState, useCallback } from "react";
 import { ScrollView, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import * as LucideIcons from "lucide-react-native";
 
 import Header from "../../components/Header";
 import WalletInfoCard from "../../components/WalletInfoCard";
@@ -29,25 +28,29 @@ export default function HomeScreen() {
         apiRequest("/data/categories").catch(() => null),
       ]);
 
-      if (profileData && profileData.profile) {
+      if (profileData?.profile) {
         setProfile({
           full_name: profileData.profile.fullName,
           wallet_balance: profileData.profile.walletBalance,
         });
       }
 
-      if (pickupsData && pickupsData.pickups) {
-        const completed = pickupsData.pickups.filter(p => p.status === 'completed');
-        const scrap = completed.reduce((sum, p) => sum + Number(p.total_qty || 0), 0);
+      if (pickupsData?.pickups) {
+        const completed = pickupsData.pickups.filter(
+          (p) => p.status === "completed"
+        );
+        const scrap = completed.reduce(
+          (sum, p) => sum + Number(p.total_qty || 0),
+          0
+        );
         setTotalScrap(scrap);
       }
 
-      if (categoriesData && categoriesData.categories) {
+      if (categoriesData?.categories) {
         setCategories(categoriesData.categories);
       }
     } catch (err) {
       console.log("Home fetch error:", err);
-      // Profile handles itself by defaulting to null
     } finally {
       setLoading(false);
     }
@@ -72,7 +75,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
-        {/* ✅ FIXED HERE */}
+        {/* Header */}
         <Header
           variant="home"
           userName={profile?.full_name}
@@ -81,6 +84,7 @@ export default function HomeScreen() {
           }
         />
 
+        {/* Wallet */}
         <WalletInfoCard
           balance={profile?.wallet_balance ?? 0}
           totalScrap={totalScrap}
@@ -89,6 +93,7 @@ export default function HomeScreen() {
           style={{ marginHorizontal: SPACING.md, marginTop: -28 }}
         />
 
+        {/* Categories Grid */}
         <View
           style={{
             flexDirection: "row",
@@ -98,28 +103,24 @@ export default function HomeScreen() {
             marginTop: SPACING.lg,
           }}
         >
-          {categories.map((item) => {
-            // Find the lucide-react-native icon by name (e.g. "Recycle")
-            const IconComponent = LucideIcons[item.icon_name] || LucideIcons.HelpCircle;
-
-            return (
-              <CategoryCard
-                key={item.id}
-                title={item.name}
-                icon={IconComponent}
-                iconBg={item.icon_bg}
-                cardBg={item.card_bg}
-                onPress={() =>
-                  navigation.navigate(ROUTES.SELL_SCRAP, {
-                    category: item.name,
-                  })
-                }
-              />
-            );
-          })}
+          {categories.map((item) => (
+            <CategoryCard
+              key={item.id}
+              title={item.name}
+              icon={item.icon_name}     // ✅ emoji from DB
+              iconBg={item.icon_bg}
+              cardBg={item.card_bg}
+              onPress={() =>
+                navigation.navigate(ROUTES.SELL_SCRAP, {
+                  category: item,   // ✅ pass full object (important)
+                })
+              }
+            />
+          ))}
         </View>
       </ScrollView>
 
+      {/* Bottom Button */}
       <View
         style={{
           position: "absolute",
