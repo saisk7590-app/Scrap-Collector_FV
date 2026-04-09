@@ -1,7 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
-const ENV = "ngrok";
+// Set ENV to "ngrok" and update API_URL when you create a fresh tunnel.
+// For stable development on emulator/device in same LAN, use "local".
+const ENV = "ngrok"; // "ngrok" | "local" | "production"  
 
 const LOCAL_API_URL =
   Platform.OS === "web"
@@ -12,7 +14,7 @@ const LOCAL_API_URL =
 
 const ENVIRONMENTS = {
   ngrok: {
-    API_URL: "https://glottologic-petrifiedly-luanna.ngrok-free.dev/api",
+    API_URL: "https://glottologic-petrifiedly-luanna.ngrok-free.dev/api", // TODO: replace with your fresh ngrok https URL
   },
   local: {
     API_URL: LOCAL_API_URL,
@@ -30,7 +32,10 @@ export const API_URL = PRIMARY_API_URL;
 
 const buildHeaders = async (extraHeaders = {}) => {
   const token = await AsyncStorage.getItem("authToken");
-  const headers = { ...extraHeaders };
+  const headers = {
+    ...extraHeaders,
+    "ngrok-skip-browser-warning": "true",
+  };
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -73,7 +78,12 @@ const requestAcrossCandidates = async (endpoint, config) => {
     try {
       return await requestWithBaseUrl(baseUrl, endpoint, config);
     } catch (err) {
+      // If server responded with 5xx, try next candidate; otherwise surface.
       if (err?.status && err.status !== 0) {
+        if (err.status >= 500) {
+          lastError = err;
+          continue;
+        }
         throw err;
       }
       lastError = err;

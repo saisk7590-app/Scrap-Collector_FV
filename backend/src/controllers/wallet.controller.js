@@ -208,12 +208,6 @@ exports.addFunds = async (req, res, next) => {
         );
 
         await client.query(
-            `INSERT INTO customer_wallet_transactions (user_id, amount, type, description, balance_after)
-             VALUES ($1, $2, 'CREDIT', $3, $4)`,
-            [collectorId, normalizedAmount, description || 'Funds added by Admin', newBalance]
-        );
-
-        await client.query(
             `UPDATE profiles
              SET wallet_balance = $1,
                  updated_at = NOW()

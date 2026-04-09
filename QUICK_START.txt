@@ -53,16 +53,46 @@ FIX: If your phone shows a blue ngrok warning page, you MUST click the "Visit Si
 
 STEP 6: MANUAL ADMIN ACTIONS (Wallet Top-up)
 --------------------------------------------
-If a Collector needs more money to pay customers, use this single SQL in your Database:
+Because the old database trigger was causing duplicate transactions for the mobile app, we removed it. 
+Instead, use these brilliant "Single Query" combinations (CTEs) that do BOTH the balance update AND the ledger insertion perfectly in exactly one run!
 
--- 1. Find the user_id (e.g. 5)
--- 2. Run this to add ₹2000 to their wallet:
+👉 SCENARIO 1: SINGLE COLLECTOR TOP-UP (Problem 2 Solved)
+Copy and run this exact single query. Just change the "11" (User ID) and the "2000" (Amount).
 
-UPDATE profiles 
-SET wallet_balance = wallet_balance + 2000 
-WHERE user_id = 5;
+WITH updated AS (
+    UPDATE profiles
+    SET wallet_balance = wallet_balance + 2000
+    WHERE user_id = 11 AND role_id = 2
+    RETURNING user_id, wallet_balance
+)
+INSERT INTO collector_wallet_transactions (collector_id, amount, type, description, balance_after)
+SELECT user_id, 2000.00, 'CREDIT', 'Admin Manual Top-up', wallet_balance
+FROM updated;
 
-*Success! The transaction history is automatically recorded by our Database Trigger.*
+
+👉 SCENARIO 2: BULK MULTIPLE COLLECTORS TOP-UP (Problem 1 Solved)
+If you have multiple collectors (e.g., ID 10 gets ₹2000, ID 11 gets ₹1500), you can update them all at the EXACT SAME TIME in one single query. 
+Just modify the 'VALUES' list below!
+
+WITH data (u_id, add_amount) AS (
+    VALUES 
+        (10, 2000.00),   -- Collector ID 10 gets 2000
+        (11, 1500.00),   -- Collector ID 11 gets 1500
+        (12, 1000.00)    -- Collector ID 12 gets 1000
+    -- Add as many collectors as you want here
+),
+updated AS (
+    UPDATE profiles p
+    SET wallet_balance = p.wallet_balance + d.add_amount
+    FROM data d
+    WHERE p.user_id = d.u_id AND p.role_id = 2
+    RETURNING p.user_id, d.add_amount, p.wallet_balance
+)
+INSERT INTO collector_wallet_transactions (collector_id, amount, type, description, balance_after)
+SELECT user_id, add_amount, 'CREDIT', 'Admin Bulk Top-up', wallet_balance
+FROM updated;
+
+*Success! Running either query cleanly adds funds AND silently updates the mobile transaction history instantly.*
 ------------------------------------------------
 
 STEP 7: BULK IMAGE UPDATES (50+ Items 🖼️)
